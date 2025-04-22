@@ -14,8 +14,9 @@ import {
 } from "@/components/ui/card";
 import { GraduationCap } from "lucide-react";
 import { Navigate, Link } from "react-router-dom";
+import { UserRole } from "@/types/auth";
 
-const ROLES: Array<{label: string, value: string}> = [
+const ROLES: Array<{label: string, value: UserRole}> = [
   { label: "Student", value: "student" },
   { label: "Parent", value: "parent" },
   { label: "Teacher", value: "teacher" },
@@ -24,7 +25,7 @@ const ROLES: Array<{label: string, value: string}> = [
 
 const Signup = () => {
   const [name, setName] = useState("");
-  const [role, setRole] = useState("student");
+  const [role, setRole] = useState<UserRole>("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const { signup, isAuthenticated, isLoading } = useAuth();
@@ -96,7 +97,7 @@ const Signup = () => {
                 id="role"
                 className="w-full border rounded-md px-3 py-2 text-base bg-background"
                 value={role}
-                onChange={(e) => setRole(e.target.value)}
+                onChange={(e) => setRole(e.target.value as UserRole)}
                 required
               >
                 {ROLES.map((r) => (
