@@ -1,3 +1,4 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -13,6 +14,15 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+
+// Define more precise types
+type ProfileRole = 'student' | 'teacher' | 'admin';
+interface Profile {
+  id: string;
+  name: string;
+  email: string;
+  role: ProfileRole;
+}
 
 interface Attendance {
   id: string;
@@ -34,11 +44,6 @@ interface CourseAttendance {
   records: Attendance[];
 }
 
-interface Student {
-  id: string;
-  name: string;
-}
-
 export default function AttendancePage() {
   const { user } = useAuth();
   const [attendanceByDay, setAttendanceByDay] = useState<Attendance[]>([]);
@@ -49,7 +54,7 @@ export default function AttendancePage() {
   
   // Teacher mode state
   const [courses, setCourses] = useState<any[]>([]);
-  const [students, setStudents] = useState<Student[]>([]);
+  const [students, setStudents] = useState<Profile[]>([]);
   const [selectedCourse, setSelectedCourse] = useState("");
   const [attendanceDate, setAttendanceDate] = useState("");
   const [presentStudents, setPresentStudents] = useState<Set<string>>(new Set());
@@ -66,6 +71,7 @@ export default function AttendancePage() {
 
   const loadStudents = async () => {
     try {
+      // Explicitly specify the table and columns
       const { data, error } = await supabase
         .from('profiles')
         .select('id, name')
@@ -73,7 +79,15 @@ export default function AttendancePage() {
       
       if (error) throw error;
       
-      setStudents(data || []);
+      // Ensure type safety
+      const validStudents: Profile[] = data?.map(student => ({
+        id: student.id,
+        name: student.name || '',
+        email: '', // Default email
+        role: 'student'
+      })) || [];
+      
+      setStudents(validStudents);
     } catch (error) {
       console.error("Error loading students:", error);
       toast({
@@ -548,3 +562,4 @@ export default function AttendancePage() {
     </MainLayout>
   );
 }
+
