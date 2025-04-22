@@ -3,6 +3,15 @@ import React from "react";
 import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow
+} from "@/components/ui/table";
+import { Skeleton } from "@/components/ui/skeleton";
 
 // Updated to match the StudentProfile from Attendance.tsx
 export type Profile = {
@@ -40,6 +49,8 @@ export const TeacherAttendanceForm: React.FC<TeacherAttendanceFormProps> = ({
   toggleStudentAttendance,
   loadingStudents
 }) => {
+  const today = new Date().toISOString().split("T")[0];
+  
   return (
     <div className="border rounded-lg p-6 bg-white shadow-sm">
       <h3 className="text-lg font-bold mb-4">Record New Attendance</h3>
@@ -67,60 +78,64 @@ export const TeacherAttendanceForm: React.FC<TeacherAttendanceFormProps> = ({
             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             value={attendanceDate}
             onChange={(e) => setAttendanceDate(e.target.value)}
+            max={today}
           />
         </div>
 
         <div>
           <label className="block text-sm font-medium mb-2">Mark Student Attendance</label>
           {loadingStudents ? (
-            <div className="py-4 text-center border rounded-md bg-muted/20">
-              Loading students...
+            <div className="space-y-2">
+              {[1, 2, 3].map((i) => (
+                <div key={i} className="flex justify-between items-center py-2">
+                  <Skeleton className="h-5 w-32" />
+                  <Skeleton className="h-9 w-24" />
+                </div>
+              ))}
             </div>
           ) : students.length === 0 ? (
             <div className="py-4 text-center border rounded-md bg-muted/20">
-              No students available
+              {selectedCourse ? "No students available" : "Select a course to view students"}
             </div>
           ) : (
-            <div className="border rounded-lg overflow-hidden">
-              <table className="w-full">
-                <thead className="bg-muted">
-                  <tr>
-                    <th className="text-left py-2 px-4 font-medium">Student Name</th>
-                    <th className="text-right py-2 px-4 font-medium">Attendance</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {students.map((student) => (
-                    <tr key={student.id} className="border-t">
-                      <td className="py-3 px-4">{student.name}</td>
-                      <td className="py-3 px-4 text-right">
-                        <Button
-                          variant={presentStudents.has(student.id) ? "default" : "outline"}
-                          size="sm"
-                          onClick={() => toggleStudentAttendance(student.id)}
-                        >
-                          {presentStudents.has(student.id) ? (
-                            <>
-                              <Check size={16} className="mr-1" /> Present
-                            </>
-                          ) : (
-                            <>
-                              <X size={16} className="mr-1" /> Absent
-                            </>
-                          )}
-                        </Button>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Student Name</TableHead>
+                  <TableHead className="text-right">Attendance</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {students.map((student) => (
+                  <TableRow key={student.id}>
+                    <TableCell>{student.name || student.email}</TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        variant={presentStudents.has(student.id) ? "default" : "outline"}
+                        size="sm"
+                        onClick={() => toggleStudentAttendance(student.id)}
+                      >
+                        {presentStudents.has(student.id) ? (
+                          <>
+                            <Check size={16} className="mr-1" /> Present
+                          </>
+                        ) : (
+                          <>
+                            <X size={16} className="mr-1" /> Absent
+                          </>
+                        )}
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           )}
         </div>
 
         <Button
           onClick={onSubmit}
-          disabled={submitting || !selectedCourse || !attendanceDate}
+          disabled={submitting || !selectedCourse || !attendanceDate || students.length === 0}
           className="w-full"
         >
           {submitting ? "Recording..." : "Record Attendance"}

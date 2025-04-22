@@ -77,8 +77,10 @@ export default function AttendancePage() {
     if (!selectedCourse) return;
     
     setLoadingStudents(true);
+    setPresentStudents(new Set()); // Reset selected students
+    
     try {
-      // Use a direct query without relying on RLS
+      // Use 'eq' instead of direct comparison in the filter
       const { data, error } = await supabase
         .from('profiles')
         .select('id, name, email, role')
@@ -94,11 +96,26 @@ export default function AttendancePage() {
       })) || [];
       
       setStudents(validStudents);
+      
+      // Pre-populate with existing attendance data if available for the selected date and course
+      if (attendanceDate) {
+        const { data: existingAttendance } = await supabase
+          .from('attendance')
+          .select('present_student_ids')
+          .eq('course_id', selectedCourse)
+          .eq('date', attendanceDate)
+          .single();
+          
+        if (existingAttendance?.present_student_ids?.length) {
+          setPresentStudents(new Set(existingAttendance.present_student_ids));
+        }
+      }
+      
     } catch (error) {
       console.error("Error loading students:", error);
       toast({
         title: "Error",
-        description: "Could not load student list",
+        description: "Could not load student list. Please try again later.",
         variant: "destructive"
       });
     } finally {
@@ -313,6 +330,15 @@ export default function AttendancePage() {
       });
       return;
     }
+    if (students.length === 0) {
+      toast({
+        title: "No Students",
+        description: "There are no students available to mark attendance for",
+        variant: "destructive"
+      });
+      return;
+    }
+    
     setSubmitting(true);
     try {
       const presentStudentsArray = Array.from(presentStudents);
@@ -320,12 +346,40 @@ export default function AttendancePage() {
         .filter(student => !presentStudents.has(student.id))
         .map(student => student.id);
 
-      const { error } = await supabase.from("attendance").insert({
-        course_id: selectedCourse,
-        date: attendanceDate,
-        present_student_ids: presentStudentsArray,
-        absent_student_ids: absentStudentsArray
-      });
+      // Check if attendance record already exists for this date and course
+      const { data: existingRecord } = await supabase
+        .from("attendance")
+        .select("id")
+        .eq("course_id", selectedCourse)
+        .eq("date", attendanceDate)
+        .maybeSingle();
+
+      let error;
+      
+      if (existingRecord?.id) {
+        // Update existing record
+        const result = await supabase
+          .from("attendance")
+          .update({
+            present_student_ids: presentStudentsArray,
+            absent_student_ids: absentStudentsArray
+          })
+          .eq("id", existingRecord.id);
+          
+        error = result.error;
+      } else {
+        // Insert new record
+        const result = await supabase
+          .from("attendance")
+          .insert({
+            course_id: selectedCourse,
+            date: attendanceDate,
+            present_student_ids: presentStudentsArray,
+            absent_student_ids: absentStudentsArray
+          });
+          
+        error = result.error;  
+      }
 
       if (error) throw error;
 
@@ -344,7 +398,7 @@ export default function AttendancePage() {
       console.error("Error recording attendance:", error);
       toast({
         title: "Error",
-        description: error.message || "Failed to record attendance",
+        description: error.message || "Failed to record attendance. Please try again.",
         variant: "destructive"
       });
     } finally {
