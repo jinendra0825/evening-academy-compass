@@ -1,10 +1,8 @@
-
 import React, { createContext, useState, useContext, ReactNode } from "react";
 import { AuthContextType, User } from "../types/auth";
 import { useToast } from "@/components/ui/use-toast";
 
-// Import the Supabase client from the Lovable environment
-// @ts-expect-error This import is managed by the Lovable Supabase integration
+// Import the Supabase client
 import { supabase } from "@/lib/supabaseClient";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -165,4 +163,3 @@ export const useAuth = () => {
   }
   return context;
 };
-
