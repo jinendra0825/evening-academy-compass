@@ -24,6 +24,7 @@ interface TeacherAttendanceFormProps {
   submitting: boolean;
   onSubmit: () => void;
   toggleStudentAttendance: (studentId: string) => void;
+  loadingStudents: boolean;
 }
 
 export const TeacherAttendanceForm: React.FC<TeacherAttendanceFormProps> = ({
@@ -37,9 +38,10 @@ export const TeacherAttendanceForm: React.FC<TeacherAttendanceFormProps> = ({
   submitting,
   onSubmit,
   toggleStudentAttendance,
+  loadingStudents
 }) => {
   return (
-    <div className="border rounded-lg p-6 bg-white">
+    <div className="border rounded-lg p-6 bg-white shadow-sm">
       <h3 className="text-lg font-bold mb-4">Record New Attendance</h3>
       <div className="space-y-4">
         <div>
@@ -70,7 +72,11 @@ export const TeacherAttendanceForm: React.FC<TeacherAttendanceFormProps> = ({
 
         <div>
           <label className="block text-sm font-medium mb-2">Mark Student Attendance</label>
-          {students.length === 0 ? (
+          {loadingStudents ? (
+            <div className="py-4 text-center border rounded-md bg-muted/20">
+              Loading students...
+            </div>
+          ) : students.length === 0 ? (
             <div className="py-4 text-center border rounded-md bg-muted/20">
               No students available
             </div>

@@ -53,6 +53,7 @@ export default function AttendancePage() {
   
   const [courses, setCourses] = useState<any[]>([]);
   const [students, setStudents] = useState<StudentProfile[]>([]);
+  const [loadingStudents, setLoadingStudents] = useState(false);
   const [selectedCourse, setSelectedCourse] = useState("");
   const [attendanceDate, setAttendanceDate] = useState("");
   const [presentStudents, setPresentStudents] = useState<Set<string>>(new Set());
@@ -60,17 +61,27 @@ export default function AttendancePage() {
 
   useEffect(() => {
     if (user?.role === 'teacher') {
-      loadStudents();
       loadCourses();
     }
     loadAttendanceData();
   }, [user]);
 
+  // Only load students when a course is selected
+  useEffect(() => {
+    if (selectedCourse && user?.role === 'teacher') {
+      loadStudents();
+    }
+  }, [selectedCourse, user]);
+
   const loadStudents = async () => {
+    if (!selectedCourse) return;
+    
+    setLoadingStudents(true);
     try {
+      // Use a direct query without relying on RLS
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, name')
+        .select('id, name, email, role')
         .eq('role', 'student');
       
       if (error) throw error;
@@ -78,8 +89,8 @@ export default function AttendancePage() {
       const validStudents: StudentProfile[] = data?.map(student => ({
         id: student.id,
         name: student.name || '',
-        email: '',
-        role: 'student'
+        email: student.email || '',
+        role: student.role as 'student' | 'teacher' | 'admin'
       })) || [];
       
       setStudents(validStudents);
@@ -90,11 +101,23 @@ export default function AttendancePage() {
         description: "Could not load student list",
         variant: "destructive"
       });
+    } finally {
+      setLoadingStudents(false);
     }
   };
 
   const loadAttendanceData = async () => {
     try {
+      setLoading(true);
+      
+      // First load courses if needed
+      const { data: coursesData, error: coursesError } = await supabase
+        .from("courses")
+        .select("*");
+        
+      if (coursesError) throw coursesError;
+      
+      // Load attendance records
       const { data: attendanceData, error: attendanceError } = await supabase
         .from("attendance")
         .select(`
@@ -108,64 +131,12 @@ export default function AttendancePage() {
       
       if (attendanceError) throw attendanceError;
       
-      const { data: coursesData } = await supabase
-        .from("courses")
-        .select("*");
-      
+      // If no data, seed some demo data
       const scienceCourses = coursesData || [];
       
       if (scienceCourses.length < 5) {
-        const scienceCourseNames = [
-          { name: "Physics", code: "PHYS101", description: "Introduction to Physics" },
-          { name: "Chemistry", code: "CHEM101", description: "General Chemistry" },
-          { name: "Biology", code: "BIO101", description: "Introduction to Biology" },
-          { name: "Computer Science", code: "CS101", description: "Introduction to Programming" },
-          { name: "Environmental Science", code: "ENV101", description: "Environmental Studies" }
-        ];
-        
-        for (let i = scienceCourses.length; i < 5; i++) {
-          await supabase.from("courses").insert({
-            name: scienceCourseNames[i].name,
-            code: scienceCourseNames[i].code,
-            description: scienceCourseNames[i].description
-          });
-        }
-        
-        const { data: updatedCoursesData } = await supabase.from("courses").select("*");
-        
-        const demoStudentIds = [
-          crypto.randomUUID(),
-          crypto.randomUUID(),
-          crypto.randomUUID(),
-          crypto.randomUUID(),
-          crypto.randomUUID()
-        ];
-        
-        const lastTwoMonths = Array.from({ length: 10 }).map((_, i) => {
-          const date = new Date();
-          date.setDate(date.getDate() - (i * 7));
-          return date.toISOString().split('T')[0];
-        });
-        
-        for (const course of updatedCoursesData || []) {
-          for (const date of lastTwoMonths) {
-            const attendanceRate = Math.random() < 0.7 ? 
-              Math.floor(Math.random() * 20) + 75 : 
-              Math.floor(Math.random() * 25) + 50;
-              
-            const presentCount = Math.floor(demoStudentIds.length * (attendanceRate / 100));
-            const presentStudents = demoStudentIds.slice(0, presentCount);
-            const absentStudents = demoStudentIds.slice(presentCount);
-            
-            await supabase.from("attendance").insert({
-              course_id: course.id,
-              date: date,
-              present_student_ids: presentStudents,
-              absent_student_ids: absentStudents
-            });
-          }
-        }
-        
+        await seedDemoData(scienceCourses);
+        // After seeding, refresh the data
         const { data: refreshedData } = await supabase
           .from("attendance")
           .select(`
@@ -182,60 +153,120 @@ export default function AttendancePage() {
         setAttendanceByDay(attendanceData || []);
       }
       
+      // Process course attendance data
       const { data: latestCoursesData } = await supabase.from("courses").select("*");
       const courses = latestCoursesData || [];
       
-      const courseAttendanceMap: Record<string, CourseAttendance> = {};
-      
-      courses.forEach(course => {
-        courseAttendanceMap[course.id] = {
-          courseId: course.id,
-          courseName: course.name,
-          courseCode: course.code,
-          attendanceRate: 0,
-          records: []
-        };
-      });
-      
-      // Fix the undefined allAttendance variable by using attendanceByDay
-      const attendanceRecords = attendanceData || [];
-      
-      attendanceRecords.forEach(record => {
-        if (record.course_id && courseAttendanceMap[record.course_id]) {
-          courseAttendanceMap[record.course_id].records.push(record);
-        }
-      });
-      
-      Object.values(courseAttendanceMap).forEach(courseAttendance => {
-        if (courseAttendance.records.length > 0) {
-          let totalPresent = 0;
-          let totalStudents = 0;
-          
-          courseAttendance.records.forEach(record => {
-            totalPresent += record.present_student_ids?.length || 0;
-            totalStudents += (record.present_student_ids?.length || 0) + (record.absent_student_ids?.length || 0);
-          });
-          
-          courseAttendance.attendanceRate = totalStudents > 0 ? 
-            Math.round((totalPresent / totalStudents) * 100) : 0;
-        }
-      });
-      
-      const courseAttendances = Object.values(courseAttendanceMap);
-      const totalAttendanceRate = courseAttendances.reduce(
-        (sum, course) => sum + course.attendanceRate, 0
-      );
-      const averageAttendanceRate = courseAttendances.length > 0 ? 
-        Math.round(totalAttendanceRate / courseAttendances.length) : 0;
-      
-      setAttendanceByCourse(courseAttendances);
-      setAverageAttendance(averageAttendanceRate);
+      processAttendanceData(courses, attendanceData || []);
       
     } catch (error) {
       console.error("Error loading attendance data:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load attendance data",
+        variant: "destructive"
+      });
     } finally {
       setLoading(false);
     }
+  };
+
+  const seedDemoData = async (scienceCourses: any[]) => {
+    const scienceCourseNames = [
+      { name: "Physics", code: "PHYS101", description: "Introduction to Physics" },
+      { name: "Chemistry", code: "CHEM101", description: "General Chemistry" },
+      { name: "Biology", code: "BIO101", description: "Introduction to Biology" },
+      { name: "Computer Science", code: "CS101", description: "Introduction to Programming" },
+      { name: "Environmental Science", code: "ENV101", description: "Environmental Studies" }
+    ];
+    
+    for (let i = scienceCourses.length; i < 5; i++) {
+      await supabase.from("courses").insert({
+        name: scienceCourseNames[i].name,
+        code: scienceCourseNames[i].code,
+        description: scienceCourseNames[i].description
+      });
+    }
+    
+    const { data: updatedCoursesData } = await supabase.from("courses").select("*");
+    
+    const demoStudentIds = [
+      crypto.randomUUID(),
+      crypto.randomUUID(),
+      crypto.randomUUID(),
+      crypto.randomUUID(),
+      crypto.randomUUID()
+    ];
+    
+    const lastTwoMonths = Array.from({ length: 10 }).map((_, i) => {
+      const date = new Date();
+      date.setDate(date.getDate() - (i * 7));
+      return date.toISOString().split('T')[0];
+    });
+    
+    for (const course of updatedCoursesData || []) {
+      for (const date of lastTwoMonths) {
+        const attendanceRate = Math.random() < 0.7 ? 
+          Math.floor(Math.random() * 20) + 75 : 
+          Math.floor(Math.random() * 25) + 50;
+          
+        const presentCount = Math.floor(demoStudentIds.length * (attendanceRate / 100));
+        const presentStudents = demoStudentIds.slice(0, presentCount);
+        const absentStudents = demoStudentIds.slice(presentCount);
+        
+        await supabase.from("attendance").insert({
+          course_id: course.id,
+          date: date,
+          present_student_ids: presentStudents,
+          absent_student_ids: absentStudents
+        });
+      }
+    }
+  };
+
+  const processAttendanceData = (courses: any[], attendanceRecords: Attendance[]) => {
+    const courseAttendanceMap: Record<string, CourseAttendance> = {};
+    
+    courses.forEach(course => {
+      courseAttendanceMap[course.id] = {
+        courseId: course.id,
+        courseName: course.name,
+        courseCode: course.code,
+        attendanceRate: 0,
+        records: []
+      };
+    });
+    
+    attendanceRecords.forEach(record => {
+      if (record.course_id && courseAttendanceMap[record.course_id]) {
+        courseAttendanceMap[record.course_id].records.push(record);
+      }
+    });
+    
+    Object.values(courseAttendanceMap).forEach(courseAttendance => {
+      if (courseAttendance.records.length > 0) {
+        let totalPresent = 0;
+        let totalStudents = 0;
+        
+        courseAttendance.records.forEach(record => {
+          totalPresent += record.present_student_ids?.length || 0;
+          totalStudents += (record.present_student_ids?.length || 0) + (record.absent_student_ids?.length || 0);
+        });
+        
+        courseAttendance.attendanceRate = totalStudents > 0 ? 
+          Math.round((totalPresent / totalStudents) * 100) : 0;
+      }
+    });
+    
+    const courseAttendances = Object.values(courseAttendanceMap);
+    const totalAttendanceRate = courseAttendances.reduce(
+      (sum, course) => sum + course.attendanceRate, 0
+    );
+    const averageAttendanceRate = courseAttendances.length > 0 ? 
+      Math.round(totalAttendanceRate / courseAttendances.length) : 0;
+    
+    setAttendanceByCourse(courseAttendances);
+    setAverageAttendance(averageAttendanceRate);
   };
 
   const loadCourses = async () => {
@@ -245,6 +276,11 @@ export default function AttendancePage() {
       setCourses(data || []);
     } catch (error) {
       console.error("Error loading courses:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load courses",
+        variant: "destructive"
+      });
     }
   };
 
@@ -298,15 +334,17 @@ export default function AttendancePage() {
         description: "Attendance has been successfully recorded"
       });
 
+      // Reset form and reload data
       setSelectedCourse("");
       setAttendanceDate("");
       setPresentStudents(new Set());
       loadAttendanceData();
-    } catch (error) {
+      setActiveTab("view"); // Switch back to view tab after successful submission
+    } catch (error: any) {
       console.error("Error recording attendance:", error);
       toast({
         title: "Error",
-        description: "Failed to record attendance",
+        description: error.message || "Failed to record attendance",
         variant: "destructive"
       });
     } finally {
@@ -341,6 +379,7 @@ export default function AttendancePage() {
           submitting={submitting}
           onSubmit={handleSubmitAttendance}
           toggleStudentAttendance={toggleStudentAttendance}
+          loadingStudents={loadingStudents}
         />
       </TabsContent>
     );
@@ -363,7 +402,10 @@ export default function AttendancePage() {
           
           <TabsContent value="view">
             {loading ? (
-              <p>Loading...</p>
+              <div className="py-8 text-center">
+                <div className="animate-pulse h-8 w-40 bg-muted rounded mx-auto mb-4"></div>
+                <div className="animate-pulse h-4 w-60 bg-muted rounded mx-auto"></div>
+              </div>
             ) : (
               <div className="space-y-6">
                 <Card>
