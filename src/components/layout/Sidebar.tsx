@@ -1,19 +1,13 @@
-
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import {
-  Calendar,
-  GraduationCap,
-  Home,
-  Users,
+  CalendarDays,
+  Settings as SettingsIcon,
   Book,
-  CheckSquare,
-  ClipboardList,
-  MessageSquare,
-  Settings,
-  User,
-  Bell,
-  BookOpen,
+  FileText,
+  ListTodo,
+  Users,
+  MessageSquare
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
@@ -47,68 +41,26 @@ const SidebarLink = ({ to, icon: Icon, label }: SidebarLinkProps) => {
 
 export const Sidebar = ({ open, setOpen }: SidebarProps) => {
   const { user } = useAuth();
-  
+
   // Different navigation menus based on user role
   const adminNav = [
-    { to: "/dashboard", icon: Home, label: "Dashboard" },
-    { to: "/students", icon: Users, label: "Students" },
-    { to: "/teachers", icon: GraduationCap, label: "Teachers" },
-    { to: "/courses", icon: Book, label: "Courses" },
-    { to: "/attendance", icon: CheckSquare, label: "Attendance" },
-    { to: "/performance", icon: ClipboardList, label: "Performance" },
-    { to: "/schedule", icon: Calendar, label: "Schedule" },
-    { to: "/messages", icon: MessageSquare, label: "Messages" },
-    { to: "/parents", icon: User, label: "Parents" },
-    { to: "/notifications", icon: Bell, label: "Notifications" },
-    { to: "/settings", icon: Settings, label: "Settings" }
-  ];
-  
-  const teacherNav = [
-    { to: "/dashboard", icon: Home, label: "Dashboard" },
+    { to: "/dashboard", icon: Book, label: "Dashboard" },
     { to: "/my-courses", icon: Book, label: "My Courses" },
-    { to: "/students", icon: Users, label: "Students" },
-    { to: "/attendance", icon: CheckSquare, label: "Attendance" },
-    { to: "/grades", icon: ClipboardList, label: "Grades" },
-    { to: "/schedule", icon: Calendar, label: "Schedule" },
+    { to: "/assignments", icon: FileText, label: "Assignments" },
+    { to: "/grades", icon: ListTodo, label: "Grades" },
+    { to: "/attendance", icon: Users, label: "Attendance" },
+    { to: "/schedule", icon: CalendarDays, label: "Schedule" },
     { to: "/messages", icon: MessageSquare, label: "Messages" },
-    { to: "/settings", icon: Settings, label: "Settings" }
+    { to: "/settings", icon: SettingsIcon, label: "Settings" },
   ];
-  
-  const studentNav = [
-    { to: "/dashboard", icon: Home, label: "Dashboard" },
-    { to: "/my-courses", icon: Book, label: "My Courses" },
-    { to: "/assignments", icon: BookOpen, label: "Assignments" },
-    { to: "/grades", icon: ClipboardList, label: "Grades" },
-    { to: "/attendance", icon: CheckSquare, label: "Attendance" },
-    { to: "/schedule", icon: Calendar, label: "Schedule" },
-    { to: "/messages", icon: MessageSquare, label: "Messages" },
-    { to: "/settings", icon: Settings, label: "Settings" }
-  ];
-  
-  const parentNav = [
-    { to: "/dashboard", icon: Home, label: "Dashboard" },
-    { to: "/my-children", icon: Users, label: "My Children" },
-    { to: "/performance", icon: ClipboardList, label: "Performance" },
-    { to: "/attendance", icon: CheckSquare, label: "Attendance" },
-    { to: "/messages", icon: MessageSquare, label: "Messages" },
-    { to: "/calendar", icon: Calendar, label: "Calendar" },
-    { to: "/settings", icon: Settings, label: "Settings" }
-  ];
-  
+
+  // For other roles, display same for demo
+  const userNav = adminNav;
+
   // Select navigation based on user role
   const getNavItems = () => {
-    switch (user?.role) {
-      case "admin":
-        return adminNav;
-      case "teacher":
-        return teacherNav;
-      case "student":
-        return studentNav;
-      case "parent":
-        return parentNav;
-      default:
-        return [];
-    }
+    // For demo, just always show full nav
+    return userNav;
   };
 
   return (
@@ -121,14 +73,14 @@ export const Sidebar = ({ open, setOpen }: SidebarProps) => {
       {/* Sidebar Header */}
       <div className="flex h-16 items-center border-b px-4">
         <div className="flex items-center gap-2">
-          <GraduationCap className="h-6 w-6 text-primary" />
+          <Book className="h-6 w-6 text-primary" />
           <span className="text-xl font-semibold text-sms-blue">Evening Academy</span>
         </div>
       </div>
 
       {/* Sidebar Content */}
       <div className="flex flex-1 flex-col gap-1 overflow-auto p-4">
-        {user && getNavItems().map((item) => (
+        {getNavItems().map((item) => (
           <SidebarLink
             key={item.to}
             to={item.to}

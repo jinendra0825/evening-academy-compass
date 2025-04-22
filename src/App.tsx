@@ -9,6 +9,13 @@ import NotFound from "./pages/NotFound";
 import Login from "./pages/Login";
 import Signup from "./pages/Signup";
 import Dashboard from "./pages/Dashboard";
+import MyCourses from "./pages/MyCourses";
+import Assignments from "./pages/Assignments";
+import Grades from "./pages/Grades";
+import Attendance from "./pages/Attendance";
+import Schedule from "./pages/Schedule";
+import Messages from "./pages/Messages";
+import SettingsPage from "./pages/Settings";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
@@ -29,8 +36,13 @@ const App = () => (
             {/* Protected Routes */}
             <Route element={<ProtectedRoute />}>
               <Route path="/dashboard" element={<Dashboard />} />
-
-              {/* Additional routes will go here */}
+              <Route path="/my-courses" element={<MyCourses />} />
+              <Route path="/assignments" element={<Assignments />} />
+              <Route path="/grades" element={<Grades />} />
+              <Route path="/attendance" element={<Attendance />} />
+              <Route path="/schedule" element={<Schedule />} />
+              <Route path="/messages" element={<Messages />} />
+              <Route path="/settings" element={<SettingsPage />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />
