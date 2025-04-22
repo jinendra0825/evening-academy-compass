@@ -1,7 +1,8 @@
+
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MainLayout } from "@/components/layout/MainLayout";
-import { Users, CircleCheck, CircleX, TrendingUp, TrendingDown, Check, X } from "lucide-react";
+import { Users, CircleCheck, CircleX, TrendingUp, TrendingDown } from "lucide-react";
 import {
   Card,
   CardContent,
@@ -10,17 +11,16 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { TeacherAttendanceForm, Profile } from "@/components/attendance/TeacherAttendanceForm";
+import { TeacherAttendanceForm } from "@/components/attendance/TeacherAttendanceForm";
 
-type ProfileRole = 'student' | 'teacher' | 'admin';
-interface Profile {
+// Define separate interface to avoid conflict with imported Profile
+interface StudentProfile {
   id: string;
   name: string;
   email: string;
-  role: ProfileRole;
+  role: 'student' | 'teacher' | 'admin';
 }
 
 interface Attendance {
@@ -52,7 +52,7 @@ export default function AttendancePage() {
   const [activeTab, setActiveTab] = useState("view");
   
   const [courses, setCourses] = useState<any[]>([]);
-  const [students, setStudents] = useState<Profile[]>([]);
+  const [students, setStudents] = useState<StudentProfile[]>([]);
   const [selectedCourse, setSelectedCourse] = useState("");
   const [attendanceDate, setAttendanceDate] = useState("");
   const [presentStudents, setPresentStudents] = useState<Set<string>>(new Set());
@@ -75,7 +75,7 @@ export default function AttendancePage() {
       
       if (error) throw error;
       
-      const validStudents: Profile[] = data?.map(student => ({
+      const validStudents: StudentProfile[] = data?.map(student => ({
         id: student.id,
         name: student.name || '',
         email: '',
@@ -197,7 +197,10 @@ export default function AttendancePage() {
         };
       });
       
-      allAttendance.forEach(record => {
+      // Fix the undefined allAttendance variable by using attendanceByDay
+      const attendanceRecords = attendanceData || [];
+      
+      attendanceRecords.forEach(record => {
         if (record.course_id && courseAttendanceMap[record.course_id]) {
           courseAttendanceMap[record.course_id].records.push(record);
         }
@@ -321,6 +324,7 @@ export default function AttendancePage() {
     return new Date(dateStr).toLocaleDateString(undefined, options);
   };
 
+  // Extract AttendanceSummary component from the rendering logic
   const renderRecordAttendanceTab = () => {
     if (user?.role !== 'teacher') return null;
     return (

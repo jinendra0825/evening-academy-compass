@@ -4,6 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Check, X } from "lucide-react";
 import { toast } from "@/hooks/use-toast";
 
+// Updated to match the StudentProfile from Attendance.tsx
 export type Profile = {
   id: string;
   name: string;
@@ -69,48 +70,54 @@ export const TeacherAttendanceForm: React.FC<TeacherAttendanceFormProps> = ({
 
         <div>
           <label className="block text-sm font-medium mb-2">Mark Student Attendance</label>
-          <div className="border rounded-lg overflow-hidden">
-            <table className="w-full">
-              <thead className="bg-muted">
-                <tr>
-                  <th className="text-left py-2 px-4 font-medium">Student Name</th>
-                  <th className="text-right py-2 px-4 font-medium">Attendance</th>
-                </tr>
-              </thead>
-              <tbody>
-                {students.map((student) => (
-                  <tr key={student.id} className="border-t">
-                    <td className="py-3 px-4">{student.name}</td>
-                    <td className="py-3 px-4 text-right">
-                      <Button
-                        variant={presentStudents.has(student.id) ? "default" : "outline"}
-                        size="sm"
-                        onClick={() => toggleStudentAttendance(student.id)}
-                      >
-                        {presentStudents.has(student.id) ? (
-                          <>
-                            <Check size={16} /> Present
-                          </>
-                        ) : (
-                          <>
-                            <X size={16} /> Absent
-                          </>
-                        )}
-                      </Button>
-                    </td>
+          {students.length === 0 ? (
+            <div className="py-4 text-center border rounded-md bg-muted/20">
+              No students available
+            </div>
+          ) : (
+            <div className="border rounded-lg overflow-hidden">
+              <table className="w-full">
+                <thead className="bg-muted">
+                  <tr>
+                    <th className="text-left py-2 px-4 font-medium">Student Name</th>
+                    <th className="text-right py-2 px-4 font-medium">Attendance</th>
                   </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
+                </thead>
+                <tbody>
+                  {students.map((student) => (
+                    <tr key={student.id} className="border-t">
+                      <td className="py-3 px-4">{student.name}</td>
+                      <td className="py-3 px-4 text-right">
+                        <Button
+                          variant={presentStudents.has(student.id) ? "default" : "outline"}
+                          size="sm"
+                          onClick={() => toggleStudentAttendance(student.id)}
+                        >
+                          {presentStudents.has(student.id) ? (
+                            <>
+                              <Check size={16} className="mr-1" /> Present
+                            </>
+                          ) : (
+                            <>
+                              <X size={16} className="mr-1" /> Absent
+                            </>
+                          )}
+                        </Button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
 
         <Button
           onClick={onSubmit}
-          disabled={submitting}
+          disabled={submitting || !selectedCourse || !attendanceDate}
           className="w-full"
         >
-          Record Attendance
+          {submitting ? "Recording..." : "Record Attendance"}
         </Button>
       </div>
     </div>
