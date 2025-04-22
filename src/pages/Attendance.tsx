@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -14,8 +13,8 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
+import { TeacherAttendanceForm, Profile } from "@/components/attendance/TeacherAttendanceForm";
 
-// Define more precise types
 type ProfileRole = 'student' | 'teacher' | 'admin';
 interface Profile {
   id: string;
@@ -52,7 +51,6 @@ export default function AttendancePage() {
   const [averageAttendance, setAverageAttendance] = useState(0);
   const [activeTab, setActiveTab] = useState("view");
   
-  // Teacher mode state
   const [courses, setCourses] = useState<any[]>([]);
   const [students, setStudents] = useState<Profile[]>([]);
   const [selectedCourse, setSelectedCourse] = useState("");
@@ -61,7 +59,6 @@ export default function AttendancePage() {
   const [submitting, setSubmitting] = useState(false);
 
   useEffect(() => {
-    // Fetch students only for teachers
     if (user?.role === 'teacher') {
       loadStudents();
       loadCourses();
@@ -71,7 +68,6 @@ export default function AttendancePage() {
 
   const loadStudents = async () => {
     try {
-      // Explicitly specify the table and columns
       const { data, error } = await supabase
         .from('profiles')
         .select('id, name')
@@ -79,11 +75,10 @@ export default function AttendancePage() {
       
       if (error) throw error;
       
-      // Ensure type safety
       const validStudents: Profile[] = data?.map(student => ({
         id: student.id,
         name: student.name || '',
-        email: '', // Default email
+        email: '',
         role: 'student'
       })) || [];
       
@@ -98,10 +93,8 @@ export default function AttendancePage() {
     }
   };
 
-  // Existing loadAttendanceData, loadCourses methods remain the same
   const loadAttendanceData = async () => {
     try {
-      // Load attendance records
       const { data: attendanceData, error: attendanceError } = await supabase
         .from("attendance")
         .select(`
@@ -115,14 +108,12 @@ export default function AttendancePage() {
       
       if (attendanceError) throw attendanceError;
       
-      // Create science courses if not enough data
       const { data: coursesData } = await supabase
         .from("courses")
         .select("*");
       
       const scienceCourses = coursesData || [];
       
-      // Ensure we have 5 science courses for the demo
       if (scienceCourses.length < 5) {
         const scienceCourseNames = [
           { name: "Physics", code: "PHYS101", description: "Introduction to Physics" },
@@ -132,7 +123,6 @@ export default function AttendancePage() {
           { name: "Environmental Science", code: "ENV101", description: "Environmental Studies" }
         ];
         
-        // Only add missing courses
         for (let i = scienceCourses.length; i < 5; i++) {
           await supabase.from("courses").insert({
             name: scienceCourseNames[i].name,
@@ -141,10 +131,8 @@ export default function AttendancePage() {
           });
         }
         
-        // Reload courses after adding
         const { data: updatedCoursesData } = await supabase.from("courses").select("*");
         
-        // Generate attendance data for each course to ensure 75% average
         const demoStudentIds = [
           crypto.randomUUID(),
           crypto.randomUUID(),
@@ -155,18 +143,14 @@ export default function AttendancePage() {
         
         const lastTwoMonths = Array.from({ length: 10 }).map((_, i) => {
           const date = new Date();
-          date.setDate(date.getDate() - (i * 7)); // Weekly attendance
-          return date.toISOString().split('T')[0]; // YYYY-MM-DD format
+          date.setDate(date.getDate() - (i * 7));
+          return date.toISOString().split('T')[0];
         });
         
-        // For each course, create attendance records
         for (const course of updatedCoursesData || []) {
           for (const date of lastTwoMonths) {
-            // Determine attendance rate for this record (ranging from 70-95% for an average of ~75%)
             const attendanceRate = Math.random() < 0.7 ? 
-              // 70% of the time: high attendance (75-95%)
               Math.floor(Math.random() * 20) + 75 : 
-              // 30% of the time: low attendance (50-75%)
               Math.floor(Math.random() * 25) + 50;
               
             const presentCount = Math.floor(demoStudentIds.length * (attendanceRate / 100));
@@ -182,7 +166,6 @@ export default function AttendancePage() {
           }
         }
         
-        // Reload attendance data after adding
         const { data: refreshedData } = await supabase
           .from("attendance")
           .select(`
@@ -199,13 +182,11 @@ export default function AttendancePage() {
         setAttendanceByDay(attendanceData || []);
       }
       
-      // Process attendance by course
       const { data: latestCoursesData } = await supabase.from("courses").select("*");
       const courses = latestCoursesData || [];
       
       const courseAttendanceMap: Record<string, CourseAttendance> = {};
       
-      // Initialize course attendance objects
       courses.forEach(course => {
         courseAttendanceMap[course.id] = {
           courseId: course.id,
@@ -216,15 +197,12 @@ export default function AttendancePage() {
         };
       });
       
-      // Process attendance records
-      const allAttendance = attendanceData || [];
       allAttendance.forEach(record => {
         if (record.course_id && courseAttendanceMap[record.course_id]) {
           courseAttendanceMap[record.course_id].records.push(record);
         }
       });
       
-      // Calculate attendance rate for each course
       Object.values(courseAttendanceMap).forEach(courseAttendance => {
         if (courseAttendance.records.length > 0) {
           let totalPresent = 0;
@@ -240,7 +218,6 @@ export default function AttendancePage() {
         }
       });
       
-      // Calculate overall average attendance
       const courseAttendances = Object.values(courseAttendanceMap);
       const totalAttendanceRate = courseAttendances.reduce(
         (sum, course) => sum + course.attendanceRate, 0
@@ -257,6 +234,7 @@ export default function AttendancePage() {
       setLoading(false);
     }
   };
+
   const loadCourses = async () => {
     try {
       const { data, error } = await supabase.from("courses").select("*");
@@ -278,9 +256,8 @@ export default function AttendancePage() {
       return newSet;
     });
   };
-  
+
   const handleSubmitAttendance = async () => {
-    // Ensure only teachers can submit attendance
     if (user?.role !== 'teacher') {
       toast({
         title: "Unauthorized",
@@ -289,7 +266,6 @@ export default function AttendancePage() {
       });
       return;
     }
-
     if (!selectedCourse || !attendanceDate) {
       toast({
         title: "Missing Information",
@@ -298,35 +274,31 @@ export default function AttendancePage() {
       });
       return;
     }
-    
     setSubmitting(true);
-    
     try {
       const presentStudentsArray = Array.from(presentStudents);
       const absentStudentsArray = students
         .filter(student => !presentStudents.has(student.id))
         .map(student => student.id);
-      
+
       const { error } = await supabase.from("attendance").insert({
         course_id: selectedCourse,
         date: attendanceDate,
         present_student_ids: presentStudentsArray,
         absent_student_ids: absentStudentsArray
       });
-      
+
       if (error) throw error;
-      
+
       toast({
         title: "Attendance Recorded",
         description: "Attendance has been successfully recorded"
       });
-      
-      // Reset form and refresh data
+
       setSelectedCourse("");
       setAttendanceDate("");
       setPresentStudents(new Set());
       loadAttendanceData();
-      
     } catch (error) {
       console.error("Error recording attendance:", error);
       toast({
@@ -339,7 +311,6 @@ export default function AttendancePage() {
     }
   };
 
-  // Format date to a more readable format
   const formatDate = (dateStr: string) => {
     const options: Intl.DateTimeFormatOptions = { 
       weekday: 'long', 
@@ -350,85 +321,23 @@ export default function AttendancePage() {
     return new Date(dateStr).toLocaleDateString(undefined, options);
   };
 
-  // Only show record attendance tab for teachers
   const renderRecordAttendanceTab = () => {
     if (user?.role !== 'teacher') return null;
-
     return (
       <TabsContent value="record">
-        <div className="border rounded-lg p-6 bg-white">
-          <h3 className="text-lg font-bold mb-4">Record New Attendance</h3>
-          
-          <div className="space-y-4">
-            <div>
-              <label className="block text-sm font-medium mb-1">Course</label>
-              <select 
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                value={selectedCourse}
-                onChange={(e) => setSelectedCourse(e.target.value)}
-              >
-                <option value="">Select a course</option>
-                {courses.map(course => (
-                  <option key={course.id} value={course.id}>
-                    {course.name} ({course.code})
-                  </option>
-                ))}
-              </select>
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-1">Date</label>
-              <input 
-                type="date"
-                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
-                value={attendanceDate}
-                onChange={(e) => setAttendanceDate(e.target.value)}
-              />
-            </div>
-            
-            <div>
-              <label className="block text-sm font-medium mb-2">Mark Student Attendance</label>
-              <div className="border rounded-lg overflow-hidden">
-                <table className="w-full">
-                  <thead className="bg-muted">
-                    <tr>
-                      <th className="text-left py-2 px-4 font-medium">Student Name</th>
-                      <th className="text-right py-2 px-4 font-medium">Attendance</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {students.map(student => (
-                      <tr key={student.id} className="border-t">
-                        <td className="py-3 px-4">{student.name}</td>
-                        <td className="py-3 px-4 text-right">
-                          <Button 
-                            variant={presentStudents.has(student.id) ? "default" : "outline"}
-                            size="sm"
-                            onClick={() => toggleStudentAttendance(student.id)}
-                          >
-                            {presentStudents.has(student.id) ? (
-                              <><Check size={16} /> Present</>
-                            ) : (
-                              <><X size={16} /> Absent</>
-                            )}
-                          </Button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            </div>
-            
-            <Button 
-              onClick={handleSubmitAttendance} 
-              disabled={submitting}
-              className="w-full"
-            >
-              Record Attendance
-            </Button>
-          </div>
-        </div>
+        <TeacherAttendanceForm
+          courses={courses}
+          students={students}
+          selectedCourse={selectedCourse}
+          setSelectedCourse={setSelectedCourse}
+          attendanceDate={attendanceDate}
+          setAttendanceDate={setAttendanceDate}
+          presentStudents={presentStudents}
+          setPresentStudents={setPresentStudents}
+          submitting={submitting}
+          onSubmit={handleSubmitAttendance}
+          toggleStudentAttendance={toggleStudentAttendance}
+        />
       </TabsContent>
     );
   };
@@ -453,7 +362,6 @@ export default function AttendancePage() {
               <p>Loading...</p>
             ) : (
               <div className="space-y-6">
-                {/* Overall Attendance Stats */}
                 <Card>
                   <CardHeader className="pb-2">
                     <CardTitle>Overall Attendance</CardTitle>
@@ -480,7 +388,6 @@ export default function AttendancePage() {
                   </CardContent>
                 </Card>
                 
-                {/* Course-wise Attendance */}
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                   {attendanceByCourse.slice(0, 5).map((courseData) => (
                     <Card key={courseData.courseId}>
@@ -525,7 +432,6 @@ export default function AttendancePage() {
                   ))}
                 </div>
                 
-                {/* Recent Attendance Records */}
                 <h3 className="text-lg font-semibold mt-6 mb-2">Recent Attendance</h3>
                 <ul className="space-y-3">
                   {attendanceByDay.slice(0, 5).map((item) => (
@@ -562,4 +468,3 @@ export default function AttendancePage() {
     </MainLayout>
   );
 }
-
