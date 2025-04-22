@@ -1,24 +1,35 @@
-import { useLocation } from "react-router-dom";
-import { useEffect } from "react";
+
+import { Button } from "@/components/ui/button";
+import { useNavigate } from "react-router-dom";
+import { GraduationCap } from "lucide-react";
 
 const NotFound = () => {
-  const location = useLocation();
+  const navigate = useNavigate();
 
-  useEffect(() => {
-    console.error(
-      "404 Error: User attempted to access non-existent route:",
-      location.pathname
-    );
-  }, [location.pathname]);
+  const goBack = () => {
+    navigate(-1);
+  };
+
+  const goHome = () => {
+    navigate("/");
+  };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-100">
+    <div className="min-h-screen flex items-center justify-center bg-gray-50 px-4">
       <div className="text-center">
-        <h1 className="text-4xl font-bold mb-4">404</h1>
-        <p className="text-xl text-gray-600 mb-4">Oops! Page not found</p>
-        <a href="/" className="text-blue-500 hover:text-blue-700 underline">
-          Return to Home
-        </a>
+        <div className="flex justify-center mb-6">
+          <div className="p-4 rounded-full bg-primary/10">
+            <GraduationCap className="h-12 w-12 text-primary" />
+          </div>
+        </div>
+        <h1 className="text-4xl font-bold text-sms-blue">404</h1>
+        <p className="text-xl mt-4 mb-8 text-gray-600">Oops! Page not found</p>
+        <div className="flex flex-col sm:flex-row justify-center gap-4">
+          <Button onClick={goBack} variant="outline">
+            Go Back
+          </Button>
+          <Button onClick={goHome}>Return to Home</Button>
+        </div>
       </div>
     </div>
   );
