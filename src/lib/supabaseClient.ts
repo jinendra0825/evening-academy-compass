@@ -1,26 +1,9 @@
 
 import { createClient } from '@supabase/supabase-js';
 
-// These variables are automatically injected by Lovable when connected to Supabase
-const supabaseUrl = import.meta.env.VITE_SUPABASE_URL || '';
-const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY || '';
+// Set up Supabase with direct values
+const supabaseUrl = "https://obgazoojckeyylmzgjlo.supabase.co";
+const supabaseAnonKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9iZ2F6b29qY2tleXlsbXpnamxvIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDUzNDM5MDQsImV4cCI6MjA2MDkxOTkwNH0.T55X2ZR9WHF-SWpiKQhbFs8-JLm8DTDQDZI0huWVC0I";
 
-// Check if Supabase is properly configured
-const isSupabaseConfigured = supabaseUrl && supabaseAnonKey;
-
-if (!isSupabaseConfigured) {
-  console.error('Missing Supabase credentials. Please make sure you have connected your project to Supabase by clicking the green Supabase button in the top right.');
-}
-
-// Create a mock client if not configured to prevent runtime errors
-export const supabase = isSupabaseConfigured
-  ? createClient(supabaseUrl, supabaseAnonKey)
-  : {
-      auth: {
-        signInWithPassword: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
-        signUp: () => Promise.resolve({ data: null, error: { message: 'Supabase not configured' } }),
-        signOut: () => Promise.resolve({ error: null }),
-        getSession: () => Promise.resolve({ data: { session: null } }),
-        onAuthStateChange: () => ({ data: { subscription: { unsubscribe: () => {} } } }),
-      },
-    } as any;
+// Create Supabase client
+export const supabase = createClient(supabaseUrl, supabaseAnonKey);

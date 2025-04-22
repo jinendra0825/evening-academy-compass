@@ -1,8 +1,9 @@
+
 import React, { createContext, useState, useContext, ReactNode } from "react";
 import { AuthContextType, User } from "../types/auth";
 import { useToast } from "@/components/ui/use-toast";
 
-// Import the Supabase client
+// Import the Supabase client from the unified location
 import { supabase } from "@/lib/supabaseClient";
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
