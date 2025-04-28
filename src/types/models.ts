@@ -35,6 +35,7 @@ export interface Course {
   }[];
   enrolledStudents?: string[];  // Made optional
   room?: string;               // Made optional
+  materials?: { name: string; url: string }[]; // Add materials property
 }
 
 export interface Attendance {

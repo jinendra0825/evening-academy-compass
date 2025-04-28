@@ -1,6 +1,5 @@
 
 import { useState, useEffect } from "react";
-import { useAuth } from "@/contexts/AuthContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Button } from "@/components/ui/button";
 import { toast } from "@/components/ui/use-toast";
@@ -38,19 +37,46 @@ export const ManageEnrollments = ({ courseId }: ManageEnrollmentsProps) => {
 
   const loadEnrollments = async () => {
     try {
-      const { data, error } = await supabase
+      // First get all enrollments for this course
+      const { data: enrollmentsData, error: enrollmentsError } = await supabase
         .from("course_enrollments")
-        .select(`
-          *,
-          student:student_id (
-            name:profiles!profiles(name),
-            email:profiles!profiles(email)
-          )
-        `)
+        .select("*")
         .eq("course_id", courseId);
 
-      if (error) throw error;
-      setEnrollments(data || []);
+      if (enrollmentsError) throw enrollmentsError;
+      
+      if (!enrollmentsData || enrollmentsData.length === 0) {
+        setEnrollments([]);
+        setLoading(false);
+        return;
+      }
+
+      // Get student profiles data
+      const studentIds = enrollmentsData.map(enrollment => enrollment.student_id);
+      
+      const { data: profilesData, error: profilesError } = await supabase
+        .from("profiles")
+        .select("id, name, email")
+        .in("id", studentIds);
+        
+      if (profilesError) throw profilesError;
+
+      // Combine enrollment data with profile data
+      const enrichedEnrollments = enrollmentsData.map(enrollment => {
+        const studentProfile = profilesData?.find(profile => profile.id === enrollment.student_id);
+        return {
+          ...enrollment,
+          student: studentProfile ? {
+            name: studentProfile.name || "Unknown",
+            email: studentProfile.email || "No email"
+          } : {
+            name: "Unknown",
+            email: "No email"
+          }
+        };
+      });
+
+      setEnrollments(enrichedEnrollments);
     } catch (error) {
       console.error("Error loading enrollments:", error);
       toast({

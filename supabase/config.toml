@@ -7,4 +7,3 @@ project_id = "obgazoojckeyylmzgjlo"
 public = true
 allowed_mime_types = ["application/pdf", "application/msword", "application/vnd.openxmlformats-officedocument.wordprocessingml.document", "image/jpeg", "image/png"]
 file_size_limit = "50MB"
-
