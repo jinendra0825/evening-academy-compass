@@ -27,10 +27,19 @@ interface PaymentItem {
   required?: boolean;
 }
 
+interface Course {
+  id: string;
+  name: string;
+  code: string;
+  description: string;
+  room: string;
+}
+
 export default function Payment() {
   const { user } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [coursesLoading, setCoursesLoading] = useState(true);
   const [paymentItems, setPaymentItems] = useState<PaymentItem[]>([
     {
       id: "reg-fee",
@@ -39,21 +48,7 @@ export default function Payment() {
       amount: 5000, // $50.00
       type: "registration",
       required: true,
-    },
-    {
-      id: "course-math101",
-      name: "Mathematics 101",
-      description: "Basic mathematics course fee",
-      amount: 9900, // $99.00
-      type: "course",
-    },
-    {
-      id: "course-eng101",
-      name: "English 101",
-      description: "Basic english course fee",
-      amount: 8900, // $89.00
-      type: "course",
-    },
+    }
   ]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
@@ -69,6 +64,7 @@ export default function Payment() {
     // Fetch payment history if user is logged in
     if (user) {
       fetchPaymentHistory();
+      fetchCourses();
     }
   }, [user]);
   
@@ -80,17 +76,57 @@ export default function Payment() {
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
       
-    if (error) {
-      throw error;
+      if (error) {
+        throw error;
+      }
+      
+      if (data) {
+        setPaymentHistory(data);
+      }
+    } catch (error) {
+      console.error('Error fetching payment history:', error);
     }
-    
-    if (data) {
-      setPaymentHistory(data);
+  };
+
+  const fetchCourses = async () => {
+    setCoursesLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('courses')
+        .select('*');
+      
+      if (error) {
+        throw error;
+      }
+      
+      if (data && data.length > 0) {
+        // Map courses to payment items
+        const coursePaymentItems = data.map((course: Course) => ({
+          id: `course-${course.id}`,
+          name: course.name,
+          description: `Course fee for ${course.code}`,
+          amount: 9900, // $99.00 - default price, could be different per course
+          type: "course" as const,
+        }));
+        
+        // Combine registration fee with course items
+        setPaymentItems(prev => {
+          // Keep only the registration items from previous state
+          const registrationItems = prev.filter(item => item.type === "registration");
+          return [...registrationItems, ...coursePaymentItems];
+        });
+      }
+    } catch (error) {
+      console.error('Error fetching courses:', error);
+      toast({
+        title: "Error",
+        description: "Failed to fetch available courses",
+        variant: "destructive",
+      });
+    } finally {
+      setCoursesLoading(false);
     }
-  } catch (error) {
-    console.error('Error fetching payment history:', error);
-  }
-};
+  };
   
   const handleItemSelect = (itemId: string, checked: boolean) => {
     if (checked) {
@@ -162,29 +198,35 @@ export default function Payment() {
                 </CardDescription>
               </CardHeader>
               <CardContent>
-                <div className="space-y-4">
-                  {paymentItems.map(item => (
-                    <div key={item.id} className="flex items-start space-x-3 p-3 border rounded-md">
-                      <input
-                        type="checkbox"
-                        id={item.id}
-                        className="mt-1"
-                        checked={selectedItems.includes(item.id)}
-                        onChange={(e) => handleItemSelect(item.id, e.target.checked)}
-                        disabled={item.required}
-                      />
-                      <div className="flex-1">
-                        <Label htmlFor={item.id} className="font-medium">
-                          {item.name} {item.required && <span className="text-sm text-muted-foreground">(Required)</span>}
-                        </Label>
-                        <p className="text-sm text-muted-foreground">{item.description}</p>
+                {coursesLoading ? (
+                  <div className="flex justify-center items-center py-8">
+                    <p>Loading available courses...</p>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {paymentItems.map(item => (
+                      <div key={item.id} className="flex items-start space-x-3 p-3 border rounded-md">
+                        <input
+                          type="checkbox"
+                          id={item.id}
+                          className="mt-1"
+                          checked={selectedItems.includes(item.id)}
+                          onChange={(e) => handleItemSelect(item.id, e.target.checked)}
+                          disabled={item.required}
+                        />
+                        <div className="flex-1">
+                          <Label htmlFor={item.id} className="font-medium">
+                            {item.name} {item.required && <span className="text-sm text-muted-foreground">(Required)</span>}
+                          </Label>
+                          <p className="text-sm text-muted-foreground">{item.description}</p>
+                        </div>
+                        <div className="text-lg font-semibold">
+                          ${(item.amount / 100).toFixed(2)}
+                        </div>
                       </div>
-                      <div className="text-lg font-semibold">
-                        ${(item.amount / 100).toFixed(2)}
-                      </div>
-                    </div>
-                  ))}
-                </div>
+                    ))}
+                  </div>
+                )}
               </CardContent>
               <CardFooter className="flex flex-col items-stretch">
                 <div className="flex justify-between py-4 text-lg font-semibold">
@@ -194,7 +236,7 @@ export default function Payment() {
                 <Button
                   className="w-full"
                   onClick={handlePaymentCheckout}
-                  disabled={loading || selectedItems.length === 0}
+                  disabled={loading || selectedItems.length === 0 || coursesLoading}
                 >
                   {loading ? "Processing..." : "Proceed to Payment"}
                 </Button>

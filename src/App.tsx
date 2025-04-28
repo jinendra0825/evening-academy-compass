@@ -1,62 +1,61 @@
 
+import { BrowserRouter, Route, Routes, Navigate, Outlet } from "react-router-dom";
+import { AuthProvider } from "@/contexts/AuthContext";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { Toaster } from "@/components/ui/toaster";
-import { Toaster as Sonner } from "@/components/ui/sonner";
-import { TooltipProvider } from "@/components/ui/tooltip";
-import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
-import Index from "./pages/Index";
-import NotFound from "./pages/NotFound";
-import Login from "./pages/Login";
-import Signup from "./pages/Signup";
-import Dashboard from "./pages/Dashboard";
-import MyCourses from "./pages/MyCourses";
-import Assignments from "./pages/Assignments";
-import Grades from "./pages/Grades";
-import Attendance from "./pages/Attendance";
-import Schedule from "./pages/Schedule";
-import Messages from "./pages/Messages";
-import SettingsPage from "./pages/Settings";
-import Payment from "./pages/Payment";
-import PaymentSuccess from "./pages/PaymentSuccess";
-import AssignmentManagement from "./pages/AssignmentManagement";
-import { AuthProvider } from "./contexts/AuthContext";
-import { ProtectedRoute } from "./components/auth/ProtectedRoute";
+import { ThemeProvider } from "@/contexts/ThemeContext";
 
-const queryClient = new QueryClient();
+// Pages
+import IndexPage from "@/pages/Index";
+import LoginPage from "@/pages/Login";
+import SignupPage from "@/pages/Signup";
+import DashboardPage from "@/pages/Dashboard";
+import MyCoursesPage from "@/pages/MyCourses";
+import CourseDetailPage from "@/pages/CourseDetail";
+import AssignmentsPage from "@/pages/Assignments";
+import AssignmentManagement from "@/pages/AssignmentManagement";
+import GradesPage from "@/pages/Grades";
+import AttendancePage from "@/pages/Attendance";
+import SchedulePage from "@/pages/Schedule";
+import MessagesPage from "@/pages/Messages";
+import SettingsPage from "@/pages/Settings";
+import NotFoundPage from "@/pages/NotFound";
+import PaymentPage from "@/pages/Payment";
+import PaymentSuccessPage from "@/pages/PaymentSuccess";
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <AuthProvider>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+export default function App() {
+  return (
+    <ThemeProvider defaultTheme="light" storageKey="vite-ui-theme">
+      <BrowserRouter>
+        <AuthProvider>
           <Routes>
-            <Route path="/" element={<Index />} />
-            <Route path="/login" element={<Login />} />
-            <Route path="/signup" element={<Signup />} />
+            {/* Public Routes */}
+            <Route path="/" element={<IndexPage />} />
+            <Route path="/login" element={<LoginPage />} />
+            <Route path="/signup" element={<SignupPage />} />
 
             {/* Protected Routes */}
-            <Route element={<ProtectedRoute />}>
-              <Route path="/dashboard" element={<Dashboard />} />
-              <Route path="/my-courses" element={<MyCourses />} />
-              <Route path="/assignments" element={<Assignments />} />
-              <Route path="/assignment-management" element={<AssignmentManagement />} />
-              <Route path="/grades" element={<Grades />} />
-              <Route path="/attendance" element={<Attendance />} />
-              <Route path="/schedule" element={<Schedule />} />
-              <Route path="/messages" element={<Messages />} />
+            <Route element={<ProtectedRoute><Outlet /></ProtectedRoute>}>
+              <Route path="/dashboard" element={<DashboardPage />} />
+              <Route path="/my-courses" element={<MyCoursesPage />} />
+              <Route path="/courses/:courseId" element={<CourseDetailPage />} />
+              <Route path="/assignments" element={<AssignmentsPage />} />
+              <Route path="/assignments/:id" element={<AssignmentManagement />} />
+              <Route path="/grades" element={<GradesPage />} />
+              <Route path="/attendance" element={<AttendancePage />} />
+              <Route path="/schedule" element={<SchedulePage />} />
+              <Route path="/messages" element={<MessagesPage />} />
+              <Route path="/payment" element={<PaymentPage />} />
+              <Route path="/payment-success" element={<PaymentSuccessPage />} />
               <Route path="/settings" element={<SettingsPage />} />
-              <Route path="/payment" element={<Payment />} />
-              <Route path="/payment-success" element={<PaymentSuccess />} />
             </Route>
 
-            <Route path="*" element={<NotFound />} />
+            {/* Fallback route */}
+            <Route path="*" element={<NotFoundPage />} />
           </Routes>
-        </BrowserRouter>
-      </TooltipProvider>
-    </AuthProvider>
-  </QueryClientProvider>
-);
-
-export default App;
+          <Toaster />
+        </AuthProvider>
+      </BrowserRouter>
+    </ThemeProvider>
+  );
+}
