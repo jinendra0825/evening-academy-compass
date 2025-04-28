@@ -119,7 +119,13 @@ export default function CourseDetailPage() {
     }
   };
 
+  // Check if the current user is the teacher of this course
   const isTeacher = user?.role === "teacher" && course?.teacher_id === user?.id;
+
+  console.log("User role:", user?.role);
+  console.log("Course teacher_id:", course?.teacher_id);
+  console.log("User id:", user?.id);
+  console.log("Is teacher:", isTeacher);
 
   if (loading) {
     return (

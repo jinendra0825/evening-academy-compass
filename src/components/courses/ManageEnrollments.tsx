@@ -76,7 +76,7 @@ export const ManageEnrollments = ({ courseId }: ManageEnrollmentsProps) => {
         };
       });
 
-      setEnrollments(enrichedEnrollments);
+      setEnrollments(enrichedEnrollments as Enrollment[]);
     } catch (error) {
       console.error("Error loading enrollments:", error);
       toast({

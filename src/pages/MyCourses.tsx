@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -34,9 +35,14 @@ export default function MyCoursesPage() {
   const fetchCourses = async () => {
     setLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("courses")
-        .select("*");
+      let query = supabase.from("courses").select("*");
+      
+      // If the user is a teacher, only fetch their courses
+      if (user?.role === "teacher") {
+        query = query.eq("teacher_id", user.id);
+      }
+      
+      const { data, error } = await query;
 
       if (error) throw error;
       
@@ -49,7 +55,8 @@ export default function MyCoursesPage() {
         teacherId: item.teacher_id,
         room: item.room || "",
         schedule: [],
-        enrolledStudents: []
+        enrolledStudents: [],
+        materials: Array.isArray(item.materials) ? item.materials : []
       })) || [];
       
       setCourses(courseData);
@@ -66,8 +73,10 @@ export default function MyCoursesPage() {
   };
 
   useEffect(() => {
-    fetchCourses();
-  }, []);
+    if (user) {
+      fetchCourses();
+    }
+  }, [user]);
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
     const { name, value } = e.target;
