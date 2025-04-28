@@ -48,7 +48,17 @@ export default function CourseDetailPage() {
 
       if (error) throw error;
       
-      setCourse(data);
+      // Ensure materials is properly parsed as an array of objects
+      const parsedMaterials = Array.isArray(data.materials) 
+        ? data.materials 
+        : (typeof data.materials === 'string' ? JSON.parse(data.materials) : []);
+      
+      setCourse({
+        ...data,
+        materials: parsedMaterials,
+        teacherId: data.teacher_id // Make sure to map teacher_id to teacherId for compatibility
+      });
+      
       setEditedCourse({
         name: data.name,
         code: data.code,
