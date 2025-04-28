@@ -1,3 +1,4 @@
+
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -9,6 +10,17 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useAuth } from "@/contexts/AuthContext";
 import { toast } from "@/components/ui/use-toast";
 import { Course } from "@/types/models";
+import { ManageEnrollments } from "@/components/courses/ManageEnrollments";
+import { ManageMaterials } from "@/components/courses/ManageMaterials";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
 
 export default function CourseDetailPage() {
   const { courseId } = useParams<{ courseId: string }>();
@@ -16,47 +28,88 @@ export default function CourseDetailPage() {
   const [course, setCourse] = useState<Course | null>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState("overview");
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [editedCourse, setEditedCourse] = useState({
+    name: "",
+    code: "",
+    description: "",
+    room: ""
+  });
+
+  const fetchCourseDetails = async () => {
+    if (!courseId) return;
+
+    try {
+      const { data, error } = await supabase
+        .from("courses")
+        .select("*")
+        .eq("id", courseId)
+        .single();
+
+      if (error) throw error;
+      
+      setCourse(data);
+      setEditedCourse({
+        name: data.name,
+        code: data.code,
+        description: data.description || "",
+        room: data.room || ""
+      });
+    } catch (error) {
+      console.error("Error fetching course details:", error);
+      toast({
+        title: "Error",
+        description: "Failed to load course details",
+        variant: "destructive"
+      });
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchCourseDetails = async () => {
-      if (!courseId) return;
-
-      try {
-        const { data, error } = await supabase
-          .from("courses")
-          .select("*")
-          .eq("id", courseId)
-          .single();
-
-        if (error) throw error;
-        
-        const courseData: Course = {
-          id: data.id,
-          name: data.name,
-          code: data.code,
-          description: data.description || "",
-          teacher_id: data.teacher_id,
-          teacherId: data.teacher_id,
-          room: data.room || "",
-          schedule: [],
-          enrolledStudents: []
-        };
-        
-        setCourse(courseData);
-      } catch (error) {
-        console.error("Error fetching course details:", error);
-        toast({
-          title: "Error",
-          description: "Failed to load course details",
-          variant: "destructive"
-        });
-      } finally {
-        setLoading(false);
-      }
-    };
-
     fetchCourseDetails();
   }, [courseId]);
+
+  const handleInputChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>
+  ) => {
+    const { name, value } = e.target;
+    setEditedCourse(prev => ({ ...prev, [name]: value }));
+  };
+
+  const handleUpdateCourse = async () => {
+    try {
+      const { error } = await supabase
+        .from("courses")
+        .update({
+          name: editedCourse.name,
+          code: editedCourse.code,
+          description: editedCourse.description,
+          room: editedCourse.room
+        })
+        .eq("id", courseId);
+
+      if (error) throw error;
+
+      toast({
+        title: "Success",
+        description: "Course updated successfully"
+      });
+
+      setEditDialogOpen(false);
+      fetchCourseDetails();
+    } catch (error) {
+      console.error("Error updating course:", error);
+      toast({
+        title: "Error",
+        description: "Failed to update course",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const isTeacher = user?.role === "teacher" && course?.teacher_id === user?.id;
 
   if (loading) {
     return (
@@ -79,8 +132,6 @@ export default function CourseDetailPage() {
     );
   }
 
-  const isTeacher = user?.role === "teacher";
-
   return (
     <MainLayout>
       <div className="space-y-6">
@@ -90,7 +141,7 @@ export default function CourseDetailPage() {
             {course.name}
           </h1>
           {isTeacher && (
-            <Button>Edit Course</Button>
+            <Button onClick={() => setEditDialogOpen(true)}>Edit Course</Button>
           )}
         </div>
         
@@ -110,17 +161,6 @@ export default function CourseDetailPage() {
             </CardHeader>
             <CardContent>
               <p className="text-2xl font-bold">{course.room || "Not specified"}</p>
-            </CardContent>
-          </Card>
-          
-          <Card className="w-full md:w-auto md:flex-1">
-            <CardHeader className="pb-2">
-              <CardTitle className="text-sm font-medium">Students</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <p className="text-2xl font-bold">
-                {course.enrolledStudents?.length || 0}
-              </p>
             </CardContent>
           </Card>
         </div>
@@ -152,15 +192,30 @@ export default function CourseDetailPage() {
               </CardHeader>
               <CardContent>
                 {isTeacher ? (
-                  <div className="space-y-4">
-                    <Button>
-                      <FileText className="mr-2 h-4 w-4" />
-                      Upload Material
-                    </Button>
-                    <p className="text-sm text-muted-foreground">No materials have been uploaded yet.</p>
-                  </div>
+                  <ManageMaterials
+                    courseId={course.id}
+                    materials={course.materials || []}
+                    onMaterialsUpdate={fetchCourseDetails}
+                  />
                 ) : (
-                  <p>No course materials available yet.</p>
+                  course.materials && course.materials.length > 0 ? (
+                    <ul className="space-y-2">
+                      {course.materials.map((material, index) => (
+                        <li key={index}>
+                          <a
+                            href={material.url}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary hover:underline"
+                          >
+                            {material.name}
+                          </a>
+                        </li>
+                      ))}
+                    </ul>
+                  ) : (
+                    <p>No course materials available yet.</p>
+                  )
                 )}
               </CardContent>
             </Card>
@@ -173,24 +228,76 @@ export default function CourseDetailPage() {
                   <Users className="h-5 w-5" />
                   Students
                 </CardTitle>
-                <CardDescription>Students enrolled in this course</CardDescription>
+                <CardDescription>Manage student enrollments</CardDescription>
               </CardHeader>
               <CardContent>
                 {isTeacher ? (
-                  <div className="space-y-4">
-                    <Button>Manage Students</Button>
-                    <p className="text-sm text-muted-foreground">
-                      No students are currently enrolled in this course.
-                    </p>
-                  </div>
+                  <ManageEnrollments courseId={course.id} />
                 ) : (
-                  <p>No student information available.</p>
+                  <p>Only teachers can manage student enrollments.</p>
                 )}
               </CardContent>
             </Card>
           </TabsContent>
         </Tabs>
       </div>
+
+      <Dialog open={editDialogOpen} onOpenChange={setEditDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit Course</DialogTitle>
+          </DialogHeader>
+          <div className="grid gap-4 py-4">
+            <div className="grid gap-2">
+              <label htmlFor="name">Course Name</label>
+              <Input
+                id="name"
+                name="name"
+                value={editedCourse.name}
+                onChange={handleInputChange}
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <label htmlFor="code">Course Code</label>
+              <Input
+                id="code"
+                name="code"
+                value={editedCourse.code}
+                onChange={handleInputChange}
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <label htmlFor="room">Room</label>
+              <Input
+                id="room"
+                name="room"
+                value={editedCourse.room}
+                onChange={handleInputChange}
+              />
+            </div>
+            
+            <div className="grid gap-2">
+              <label htmlFor="description">Description</label>
+              <Textarea
+                id="description"
+                name="description"
+                value={editedCourse.description}
+                onChange={handleInputChange}
+              />
+            </div>
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setEditDialogOpen(false)}>
+              Cancel
+            </Button>
+            <Button onClick={handleUpdateCourse}>
+              Save Changes
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </MainLayout>
   );
 }

@@ -129,11 +129,44 @@ export type Database = {
           },
         ]
       }
+      course_enrollments: {
+        Row: {
+          course_id: string | null
+          created_at: string | null
+          id: string
+          status: string
+          student_id: string | null
+        }
+        Insert: {
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          status?: string
+          student_id?: string | null
+        }
+        Update: {
+          course_id?: string | null
+          created_at?: string | null
+          id?: string
+          status?: string
+          student_id?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "course_enrollments_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       courses: {
         Row: {
           code: string
           description: string | null
           id: string
+          materials: Json | null
           name: string
           room: string | null
           teacher_id: string | null
@@ -142,6 +175,7 @@ export type Database = {
           code: string
           description?: string | null
           id?: string
+          materials?: Json | null
           name: string
           room?: string | null
           teacher_id?: string | null
@@ -150,6 +184,7 @@ export type Database = {
           code?: string
           description?: string | null
           id?: string
+          materials?: Json | null
           name?: string
           room?: string | null
           teacher_id?: string | null
