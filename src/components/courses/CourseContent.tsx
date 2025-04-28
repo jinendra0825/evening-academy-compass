@@ -1,4 +1,3 @@
-
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Users } from "lucide-react";
@@ -48,32 +47,12 @@ export const CourseContent = ({
             <CardDescription>Lecture notes, readings, and resources</CardDescription>
           </CardHeader>
           <CardContent>
-            {isTeacher ? (
-              <ManageMaterials
-                courseId={course.id}
-                materials={course.materials || []}
-                onMaterialsUpdate={onMaterialsUpdate}
-              />
-            ) : (
-              course.materials && course.materials.length > 0 ? (
-                <ul className="space-y-2">
-                  {course.materials.map((material, index) => (
-                    <li key={index}>
-                      <a
-                        href={material.url}
-                        target="_blank"
-                        rel="noopener noreferrer"
-                        className="text-primary hover:underline"
-                      >
-                        {material.name}
-                      </a>
-                    </li>
-                  ))}
-                </ul>
-              ) : (
-                <p>No course materials available yet.</p>
-              )
-            )}
+            <ManageMaterials
+              courseId={course.id}
+              materials={course.materials || []}
+              onMaterialsUpdate={onMaterialsUpdate}
+              isTeacher={isTeacher}
+            />
           </CardContent>
         </Card>
       </TabsContent>
