@@ -30,6 +30,7 @@ interface Grade {
 }
 
 export default function GradesPage() {
+  const { user } = useAuth();
   const [grades, setGrades] = useState<Grade[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -39,34 +40,36 @@ export default function GradesPage() {
 
   const loadGrades = async () => {
     try {
-      const { data, error } = await supabase
-        .from("grades")
-        .select(`
-          *,
-          assignment:assignment_id (
-            title,
-            due_date,
-            course_id
-          )
-        `);
-
-      if (error) throw error;
-
-      // Get course information for each grade entry
-      const gradesWithCourses = await Promise.all((data || []).map(async (grade) => {
-        if (grade.assignment?.course_id) {
-          const { data: courseData } = await supabase
-            .from("courses")
-            .select("name, code")
-            .eq("id", grade.assignment.course_id)
-            .single();
-          
-          return { ...grade, course: courseData };
-        }
-        return grade;
-      }));
-
-      setGrades(gradesWithCourses);
+      // For teachers, fetch all grades if needed
+      if (user?.role === "teacher") {
+        const { data, error } = await supabase
+          .from("grades")
+          .select(`
+            *,
+            assignment:assignment_id (
+              title,
+              due_date,
+              course_id
+            )
+          `);
+        if (error) throw error;
+        setGrades(data || []);
+      } else {
+        // For students, only fetch their own grades
+        const { data, error } = await supabase
+          .from("grades")
+          .select(`
+            *,
+            assignment:assignment_id (
+              title,
+              due_date,
+              course_id
+            )
+          `)
+          .eq('student_id', user?.id);
+        if (error) throw error;
+        setGrades(data || []);
+      }
       setLoading(false);
     } catch (error) {
       console.error("Error loading grades:", error);

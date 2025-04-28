@@ -1,4 +1,3 @@
-
 import { BrowserRouter, Route, Routes, Navigate, Outlet } from "react-router-dom";
 import { AuthProvider } from "@/contexts/AuthContext";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
@@ -39,9 +38,18 @@ export default function App() {
               <Route path="/dashboard" element={<DashboardPage />} />
               <Route path="/my-courses" element={<MyCoursesPage />} />
               <Route path="/courses/:courseId" element={<CourseDetailPage />} />
-              <Route path="/assignments" element={<AssignmentsPage />} />
-              <Route path="/assignments/:id" element={<AssignmentManagement />} />
-              <Route path="/grades" element={<GradesPage />} />
+
+              {/* Teacher-only routes */}
+              <Route element={<ProtectedRoute allowedRoles={["teacher", "admin"]} />}>
+                <Route path="/assignments/:id" element={<AssignmentManagement />} />
+              </Route>
+
+              {/* Student/Teacher routes */}
+              <Route element={<ProtectedRoute />}>
+                <Route path="/assignments" element={<AssignmentsPage />} />
+                <Route path="/grades" element={<GradesPage />} />
+              </Route>
+
               <Route path="/attendance" element={<AttendancePage />} />
               <Route path="/schedule" element={<SchedulePage />} />
               <Route path="/messages" element={<MessagesPage />} />
