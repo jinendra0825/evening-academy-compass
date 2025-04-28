@@ -3,6 +3,7 @@ import { useState, useEffect } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { ListTodo, Star, StarHalf } from "lucide-react";
+import { useAuth } from "@/contexts/AuthContext";
 import {
   Table,
   TableBody,
