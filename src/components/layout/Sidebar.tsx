@@ -1,3 +1,4 @@
+
 import { useAuth } from "@/contexts/AuthContext";
 import { cn } from "@/lib/utils";
 import {
@@ -7,7 +8,8 @@ import {
   FileText,
   ListTodo,
   Users,
-  MessageSquare
+  MessageSquare,
+  CreditCard
 } from "lucide-react";
 import { NavLink } from "react-router-dom";
 
@@ -51,6 +53,7 @@ export const Sidebar = ({ open, setOpen }: SidebarProps) => {
     { to: "/attendance", icon: Users, label: "Attendance" },
     { to: "/schedule", icon: CalendarDays, label: "Schedule" },
     { to: "/messages", icon: MessageSquare, label: "Messages" },
+    { to: "/payment", icon: CreditCard, label: "Payment" },
     { to: "/settings", icon: SettingsIcon, label: "Settings" },
   ];
 
