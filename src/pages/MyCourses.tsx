@@ -46,18 +46,43 @@ export default function MyCoursesPage() {
 
       if (error) throw error;
       
-      const courseData = data?.map(item => ({
-        id: item.id,
-        name: item.name,
-        code: item.code,
-        description: item.description || "",
-        teacher_id: item.teacher_id,
-        teacherId: item.teacher_id,
-        room: item.room || "",
-        schedule: [],
-        enrolledStudents: [],
-        materials: Array.isArray(item.materials) ? item.materials : []
-      })) || [];
+      const courseData = data?.map(item => {
+        // Parse materials to ensure they match the expected format
+        let parsedMaterials: { name: string; url: string }[] = [];
+        
+        if (item.materials) {
+          // Handle array or JSON string
+          const materialsData = typeof item.materials === 'string' 
+            ? JSON.parse(item.materials) 
+            : item.materials;
+            
+          // Ensure materials is an array and each item has name and url
+          if (Array.isArray(materialsData)) {
+            parsedMaterials = materialsData.map(material => {
+              if (typeof material === 'object' && material !== null) {
+                return {
+                  name: material.name || 'Unnamed material',
+                  url: material.url || '#'
+                };
+              }
+              return { name: 'Unnamed material', url: '#' };
+            });
+          }
+        }
+        
+        return {
+          id: item.id,
+          name: item.name,
+          code: item.code,
+          description: item.description || "",
+          teacher_id: item.teacher_id,
+          teacherId: item.teacher_id,
+          room: item.room || "",
+          schedule: [],
+          enrolledStudents: [],
+          materials: parsedMaterials
+        };
+      }) || [];
       
       setCourses(courseData);
     } catch (error) {
