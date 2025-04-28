@@ -26,14 +26,15 @@ export interface Course {
   name: string;
   code: string;
   description: string;
-  teacherId: string;
-  schedule: {
+  teacher_id?: string;  // Changed from teacherId to match Supabase
+  teacherId?: string;   // Keep for backward compatibility
+  schedule?: {          // Made optional
     day: string;
     startTime: string;
     endTime: string;
   }[];
-  enrolledStudents: string[];
-  room: string;
+  enrolledStudents?: string[];  // Made optional
+  room?: string;               // Made optional
 }
 
 export interface Attendance {

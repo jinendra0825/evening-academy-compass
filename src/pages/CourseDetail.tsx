@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { useParams } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -30,7 +29,20 @@ export default function CourseDetailPage() {
           .single();
 
         if (error) throw error;
-        setCourse(data);
+        
+        const courseData: Course = {
+          id: data.id,
+          name: data.name,
+          code: data.code,
+          description: data.description || "",
+          teacher_id: data.teacher_id,
+          teacherId: data.teacher_id,
+          room: data.room || "",
+          schedule: [],
+          enrolledStudents: []
+        };
+        
+        setCourse(courseData);
       } catch (error) {
         console.error("Error fetching course details:", error);
         toast({

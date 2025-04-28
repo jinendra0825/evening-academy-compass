@@ -1,4 +1,3 @@
-
 import { useEffect, useState } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { MainLayout } from "@/components/layout/MainLayout";
@@ -25,7 +24,6 @@ export default function MyCoursesPage() {
   const [openDialog, setOpenDialog] = useState(false);
   const { user } = useAuth();
 
-  // New course form state
   const [newCourse, setNewCourse] = useState({
     name: "",
     code: "",
@@ -41,7 +39,20 @@ export default function MyCoursesPage() {
         .select("*");
 
       if (error) throw error;
-      setCourses(data || []);
+      
+      const courseData = data?.map(item => ({
+        id: item.id,
+        name: item.name,
+        code: item.code,
+        description: item.description || "",
+        teacher_id: item.teacher_id,
+        teacherId: item.teacher_id,
+        room: item.room || "",
+        schedule: [],
+        enrolledStudents: []
+      })) || [];
+      
+      setCourses(courseData);
     } catch (error) {
       console.error("Error fetching courses:", error);
       toast({
@@ -97,7 +108,7 @@ export default function MyCoursesPage() {
       
       setNewCourse({ name: "", code: "", description: "", room: "" });
       setOpenDialog(false);
-      fetchCourses(); // Refresh the courses list
+      fetchCourses();
     } catch (error) {
       console.error("Error creating course:", error);
       toast({
@@ -144,7 +155,6 @@ export default function MyCoursesPage() {
         )}
       </div>
 
-      {/* Add Course Dialog */}
       <Dialog open={openDialog} onOpenChange={setOpenDialog}>
         <DialogContent>
           <DialogHeader>
