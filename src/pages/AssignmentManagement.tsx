@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { MainLayout } from "@/components/layout/MainLayout";
 import { useAuth } from "@/contexts/AuthContext";
@@ -49,6 +48,23 @@ interface Course {
   code: string;
 }
 
+interface AssignmentSubmission {
+  id: string;
+  assignment_id: string;
+  student_id: string;
+  file_url: string;
+  file_name: string;
+  file_type: string;
+  submitted_at: string;
+}
+
+interface AssignmentSubmissionWithMeta extends AssignmentSubmission {
+  student?: {
+    name: string;
+    email: string;
+  };
+}
+
 export default function AssignmentManagement() {
   const { user } = useAuth();
   const isTeacher = user?.role === "teacher";
@@ -59,7 +75,6 @@ export default function AssignmentManagement() {
   const [loading, setLoading] = useState(true);
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
 
-  // New assignment form state
   const [newAssignment, setNewAssignment] = useState({
     title: "",
     description: "",
@@ -67,7 +82,6 @@ export default function AssignmentManagement() {
     course_id: ""
   });
 
-  // Student submission state
   const [studentSubmissions, setStudentSubmissions] = useState<any[]>([]);
 
   useEffect(() => {
@@ -119,7 +133,13 @@ export default function AssignmentManagement() {
     try {
       const { data, error } = await supabase
         .from('assignment_submissions')
-        .select('*')
+        .select(`
+          *,
+          student:profiles!student_id (
+            name,
+            email
+          )
+        `)
         .eq('student_id', user.id);
 
       if (error) throw error;
@@ -156,7 +176,6 @@ export default function AssignmentManagement() {
     try {
       setUploading(true);
       
-      // 1. Upload file to storage
       const fileExt = selectedFile.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}.${fileExt}`;
       const filePath = `assignments/${fileName}`;
@@ -167,12 +186,10 @@ export default function AssignmentManagement() {
 
       if (uploadError) throw uploadError;
 
-      // 2. Get the public URL
       const { data: publicURLData } = supabase.storage
         .from('assignments')
         .getPublicUrl(filePath);
 
-      // 3. Create the assignment record in the database
       const { error: insertError } = await supabase.from('assignments').insert({
         ...newAssignment,
         file_url: publicURLData.publicUrl,
@@ -187,7 +204,6 @@ export default function AssignmentManagement() {
         description: "Assignment was successfully created and uploaded.",
       });
 
-      // Reset form and refresh assignments
       setNewAssignment({
         title: "",
         description: "",
@@ -216,7 +232,6 @@ export default function AssignmentManagement() {
     try {
       setUploading(true);
       
-      // 1. Upload file to storage
       const fileExt = selectedFile.name.split('.').pop();
       const fileName = `${crypto.randomUUID()}-${user.id}.${fileExt}`;
       const filePath = `submissions/${fileName}`;
@@ -227,12 +242,10 @@ export default function AssignmentManagement() {
 
       if (uploadError) throw uploadError;
 
-      // 2. Get the public URL
       const { data: publicURLData } = supabase.storage
         .from('submissions')
         .getPublicUrl(filePath);
 
-      // 3. Create the submission record in the database
       const { error: insertError } = await supabase.from('assignment_submissions').insert({
         assignment_id: assignmentId,
         student_id: user.id,
@@ -472,7 +485,6 @@ export default function AssignmentManagement() {
             </TabsContent>
           </Tabs>
         ) : (
-          // Student view
           <div className="space-y-6">
             <Card>
               <CardHeader>

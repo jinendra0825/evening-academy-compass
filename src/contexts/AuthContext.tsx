@@ -1,15 +1,14 @@
-import React, { createContext, useState, useContext, ReactNode } from "react";
-import { AuthContextType, User } from "../types/auth";
-import { useToast } from "@/components/ui/use-toast";
 
-// Import the Supabase client from the unified location
+import React, { createContext, useState, useContext, ReactNode } from "react";
+import { useToast } from "@/components/ui/use-toast";
 import { supabase } from "@/lib/supabaseClient";
+import type { User as SupabaseUser } from '@supabase/supabase-js';
 
 export interface User {
   id: string;
   name: string;
   email: string;
-  role: UserRole;
+  role: string;
   avatar?: string;
   phone?: string;
 }
@@ -24,7 +23,7 @@ export interface AuthContextType {
     name: string,
     email: string,
     password: string,
-    role?: UserRole,
+    role?: string,
     phone?: string
   ) => Promise<void>;
 }
@@ -44,13 +43,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         data: { session },
       } = await supabase.auth.getSession();
       if (session?.user) {
-        // fetch user profile if you have a profiles table, here we'll just set basic info
         const profileUser: User = {
           id: session.user.id,
           name: session.user.user_metadata?.name || session.user.email || "",
           email: session.user.email || "",
           role: session.user.user_metadata?.role || "student",
           avatar: session.user.user_metadata?.avatar || "",
+          phone: session.user.user_metadata?.phone || "",
         };
         setUser(profileUser);
       }
@@ -67,6 +66,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           email: session.user.email || "",
           role: session.user.user_metadata?.role || "student",
           avatar: session.user.user_metadata?.avatar || "",
+          phone: session.user.user_metadata?.phone || "",
         };
         setUser(u);
       } else {
@@ -101,6 +101,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         email: sessionUser.email || "",
         role: sessionUser.user_metadata?.role || "student",
         avatar: sessionUser.user_metadata?.avatar || "",
+        phone: sessionUser.user_metadata?.phone || "",
       };
       setUser(profileUser);
       toast({
@@ -111,11 +112,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   };
 
-  const signup = async (name: string, email: string, password: string, role: UserRole = "student", phone?: string) => {
+  const signup = async (name: string, email: string, password: string, role: string = "student", phone?: string) => {
     try {
       setIsLoading(true);
       
-      // Register the user with Supabase auth
       const { data: authData, error: authError } = await supabase.auth.signUp({
         email,
         password,

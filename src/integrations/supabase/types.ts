@@ -9,11 +9,61 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
+      assignment_submissions: {
+        Row: {
+          assignment_id: string
+          feedback: string | null
+          file_name: string | null
+          file_type: string | null
+          file_url: string | null
+          grade: number | null
+          graded_at: string | null
+          id: string
+          student_id: string
+          submitted_at: string | null
+        }
+        Insert: {
+          assignment_id: string
+          feedback?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          grade?: number | null
+          graded_at?: string | null
+          id?: string
+          student_id: string
+          submitted_at?: string | null
+        }
+        Update: {
+          assignment_id?: string
+          feedback?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
+          grade?: number | null
+          graded_at?: string | null
+          id?: string
+          student_id?: string
+          submitted_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "assignment_submissions_assignment_id_fkey"
+            columns: ["assignment_id"]
+            isOneToOne: false
+            referencedRelation: "assignments"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       assignments: {
         Row: {
           course_id: string | null
           description: string | null
           due_date: string | null
+          file_name: string | null
+          file_type: string | null
+          file_url: string | null
           id: string
           title: string
         }
@@ -21,6 +71,9 @@ export type Database = {
           course_id?: string | null
           description?: string | null
           due_date?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
           id?: string
           title: string
         }
@@ -28,6 +81,9 @@ export type Database = {
           course_id?: string | null
           description?: string | null
           due_date?: string | null
+          file_name?: string | null
+          file_type?: string | null
+          file_url?: string | null
           id?: string
           title?: string
         }
@@ -156,30 +212,75 @@ export type Database = {
         }
         Relationships: []
       }
+      payments: {
+        Row: {
+          amount: number
+          created_at: string | null
+          description: string | null
+          id: string
+          payment_type: string | null
+          status: string
+          transaction_id: string | null
+          updated_at: string | null
+          user_id: string
+        }
+        Insert: {
+          amount: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          payment_type?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string | null
+          user_id: string
+        }
+        Update: {
+          amount?: number
+          created_at?: string | null
+          description?: string | null
+          id?: string
+          payment_type?: string | null
+          status?: string
+          transaction_id?: string | null
+          updated_at?: string | null
+          user_id?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar: string | null
           created_at: string | null
           email: string | null
+          fees_paid: boolean | null
           id: string
           name: string | null
+          phone: string | null
           role: string
+          stripe_customer_id: string | null
         }
         Insert: {
           avatar?: string | null
           created_at?: string | null
           email?: string | null
+          fees_paid?: boolean | null
           id: string
           name?: string | null
+          phone?: string | null
           role?: string
+          stripe_customer_id?: string | null
         }
         Update: {
           avatar?: string | null
           created_at?: string | null
           email?: string | null
+          fees_paid?: boolean | null
           id?: string
           name?: string | null
+          phone?: string | null
           role?: string
+          stripe_customer_id?: string | null
         }
         Relationships: []
       }

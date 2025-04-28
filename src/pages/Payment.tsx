@@ -1,4 +1,3 @@
-
 import { useState, useEffect } from "react";
 import { useNavigate } from "react-router-dom";
 import { supabase } from "@/integrations/supabase/client";
@@ -80,18 +79,18 @@ export default function Payment() {
         .select('*')
         .eq('user_id', user?.id)
         .order('created_at', { ascending: false });
-        
-      if (error) {
-        throw error;
-      }
       
-      if (data) {
-        setPaymentHistory(data);
-      }
-    } catch (error) {
-      console.error('Error fetching payment history:', error);
+    if (error) {
+      throw error;
     }
-  };
+    
+    if (data) {
+      setPaymentHistory(data);
+    }
+  } catch (error) {
+    console.error('Error fetching payment history:', error);
+  }
+};
   
   const handleItemSelect = (itemId: string, checked: boolean) => {
     if (checked) {
