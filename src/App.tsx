@@ -16,6 +16,9 @@ import Attendance from "./pages/Attendance";
 import Schedule from "./pages/Schedule";
 import Messages from "./pages/Messages";
 import SettingsPage from "./pages/Settings";
+import Payment from "./pages/Payment";
+import PaymentSuccess from "./pages/PaymentSuccess";
+import AssignmentManagement from "./pages/AssignmentManagement";
 import { AuthProvider } from "./contexts/AuthContext";
 import { ProtectedRoute } from "./components/auth/ProtectedRoute";
 
@@ -38,11 +41,14 @@ const App = () => (
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/my-courses" element={<MyCourses />} />
               <Route path="/assignments" element={<Assignments />} />
+              <Route path="/assignment-management" element={<AssignmentManagement />} />
               <Route path="/grades" element={<Grades />} />
               <Route path="/attendance" element={<Attendance />} />
               <Route path="/schedule" element={<Schedule />} />
               <Route path="/messages" element={<Messages />} />
               <Route path="/settings" element={<SettingsPage />} />
+              <Route path="/payment" element={<Payment />} />
+              <Route path="/payment-success" element={<PaymentSuccess />} />
             </Route>
 
             <Route path="*" element={<NotFound />} />

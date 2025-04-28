@@ -1,10 +1,33 @@
-
 import React, { createContext, useState, useContext, ReactNode } from "react";
 import { AuthContextType, User } from "../types/auth";
 import { useToast } from "@/components/ui/use-toast";
 
 // Import the Supabase client from the unified location
 import { supabase } from "@/lib/supabaseClient";
+
+export interface User {
+  id: string;
+  name: string;
+  email: string;
+  role: UserRole;
+  avatar?: string;
+  phone?: string;
+}
+
+export interface AuthContextType {
+  user: User | null;
+  login: (email: string, password: string) => Promise<void>;
+  logout: () => void;
+  isAuthenticated: boolean;
+  isLoading: boolean;
+  signup?: (
+    name: string,
+    email: string,
+    password: string,
+    role?: UserRole,
+    phone?: string
+  ) => Promise<void>;
+}
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
@@ -88,48 +111,34 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoading(false);
   };
 
-  const signup = async (
-    name: string,
-    email: string,
-    password: string,
-    role: string = "student"
-  ) => {
-    setIsLoading(true);
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          name,
-          role,
-        },
-      },
-    });
-    if (error) {
-      toast({
-        variant: "destructive",
-        title: "Signup failed",
-        description: error.message,
+  const signup = async (name: string, email: string, password: string, role: UserRole = "student", phone?: string) => {
+    try {
+      setIsLoading(true);
+      
+      // Register the user with Supabase auth
+      const { data: authData, error: authError } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            name,
+            role,
+            phone
+          }
+        }
       });
+      
+      if (authError) throw new Error(authError.message);
+      
+      // Wait for the auth state to refresh
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
       setIsLoading(false);
-      return;
+    } catch (error) {
+      setIsLoading(false);
+      console.error('Error signing up:', error);
+      throw error;
     }
-    const sessionUser = data.user;
-    if (sessionUser) {
-      const profileUser: User = {
-        id: sessionUser.id,
-        name: sessionUser.user_metadata?.name || sessionUser.email || "",
-        email: sessionUser.email || "",
-        role: sessionUser.user_metadata?.role || "student",
-        avatar: sessionUser.user_metadata?.avatar || "",
-      };
-      setUser(profileUser);
-      toast({
-        title: "Signup successful",
-        description: "Account created! Please check your email for a confirmation link if applicable.",
-      });
-    }
-    setIsLoading(false);
   };
 
   const logout = async () => {

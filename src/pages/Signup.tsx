@@ -15,6 +15,8 @@ import {
 import { GraduationCap } from "lucide-react";
 import { Navigate, Link } from "react-router-dom";
 import { UserRole } from "@/types/auth";
+import { toast } from "@/components/ui/use-toast";
+import { z } from "zod";
 
 const ROLES: Array<{label: string, value: UserRole}> = [
   { label: "Student", value: "student" },
@@ -23,17 +25,76 @@ const ROLES: Array<{label: string, value: UserRole}> = [
   // Do not allow admin self-signup for now
 ];
 
+// Create a phone validation schema
+const phoneSchema = z.string()
+  .min(10, "Phone number must have at least 10 digits")
+  .max(15, "Phone number is too long")
+  .regex(/^\+?[0-9\s-()]+$/, "Invalid phone number format");
+
 const Signup = () => {
   const [name, setName] = useState("");
   const [role, setRole] = useState<UserRole>("student");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [phone, setPhone] = useState("");
+  const [passwordError, setPasswordError] = useState("");
+  const [phoneError, setPhoneError] = useState("");
   const { signup, isAuthenticated, isLoading } = useAuth();
+
+  const validatePhone = () => {
+    try {
+      phoneSchema.parse(phone);
+      setPhoneError("");
+      return true;
+    } catch (error) {
+      if (error instanceof z.ZodError) {
+        setPhoneError(error.errors[0].message);
+      } else {
+        setPhoneError("Invalid phone number");
+      }
+      return false;
+    }
+  };
+
+  const validatePasswordMatch = () => {
+    if (password !== confirmPassword) {
+      setPasswordError("Passwords do not match");
+      return false;
+    }
+    setPasswordError("");
+    return true;
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate passwords match
+    if (!validatePasswordMatch()) {
+      return;
+    }
+
+    // Validate phone number
+    if (!validatePhone()) {
+      return;
+    }
+
+    // All validations passed
     if (signup) {
-      await signup(name, email, password, role);
+      try {
+        await signup(name, email, password, role, phone);
+        toast({
+          title: "Account created",
+          description: "Your account has been created successfully!",
+        });
+      } catch (error) {
+        console.error("Signup error:", error);
+        toast({
+          title: "Signup failed",
+          description: error instanceof Error ? error.message : "An error occurred during signup",
+          variant: "destructive",
+        });
+      }
     }
   };
 
@@ -80,6 +141,20 @@ const Signup = () => {
               />
             </div>
             <div className="space-y-2">
+              <Label htmlFor="phone">Phone Number</Label>
+              <Input
+                id="phone"
+                type="tel"
+                placeholder="Enter your phone number"
+                value={phone}
+                onChange={(e) => setPhone(e.target.value)}
+                required
+              />
+              {phoneError && (
+                <p className="text-sm text-destructive">{phoneError}</p>
+              )}
+            </div>
+            <div className="space-y-2">
               <Label htmlFor="password">Password</Label>
               <Input
                 id="password"
@@ -90,6 +165,22 @@ const Signup = () => {
                 required
                 minLength={6}
               />
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="confirmPassword">Confirm Password</Label>
+              <Input
+                id="confirmPassword"
+                type="password"
+                placeholder="Confirm your password"
+                value={confirmPassword}
+                onChange={(e) => setConfirmPassword(e.target.value)}
+                required
+                minLength={6}
+                onBlur={validatePasswordMatch}
+              />
+              {passwordError && (
+                <p className="text-sm text-destructive">{passwordError}</p>
+              )}
             </div>
             <div className="space-y-2">
               <Label htmlFor="role">Role</Label>
