@@ -69,7 +69,7 @@ export interface Notification {
   title: string;
   message: string;
   date: string;
-  recipientIds: string[];
+  recipientids: string[]; // Changed from recipientIds to match Supabase column name
   read: boolean;
   type: "announcement" | "alert" | "message";
   course_id?: string;

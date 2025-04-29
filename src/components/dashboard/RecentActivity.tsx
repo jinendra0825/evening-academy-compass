@@ -29,8 +29,8 @@ export const RecentActivity = () => {
         .select("*");
         
       if (user.role === "student") {
-        // For students, show activities where they are in recipientIds
-        query = query.filter('recipientIds', 'cs', `{${user.id}}`);
+        // For students, show activities where they are in recipientids
+        query = query.filter('recipientids', 'cs', `{${user.id}}`);
       } else if (user.role === "teacher") {
         // For teachers, get courses they teach
         const { data: teacherCoursesData } = await supabase

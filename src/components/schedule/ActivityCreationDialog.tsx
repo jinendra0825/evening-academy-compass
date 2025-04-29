@@ -84,7 +84,7 @@ export function ActivityCreationDialog({
           title: formData.title,
           message: formData.message,
           date: new Date().toISOString(),
-          recipientIds: recipientIds,
+          recipientids: recipientIds, // Changed to match the database column name
           read: false,
           type: formData.type,
           course_id: formData.courseId,
