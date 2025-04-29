@@ -83,7 +83,36 @@ export default function SchedulePage() {
           .eq("teacher_id", user.id);
           
         if (error) throw error;
-        setTeacherCourses(data || []);
+        
+        // Process course data to match Course type
+        const processedCourses = data?.map(course => {
+          let materials: { name: string; url: string }[] = [];
+          
+          if (course.materials) {
+            try {
+              // Handle both string and object formats
+              const materialsData = typeof course.materials === 'string'
+                ? JSON.parse(course.materials)
+                : course.materials;
+                
+              if (Array.isArray(materialsData)) {
+                materials = materialsData.map(material => ({
+                  name: material.name || 'Unnamed material',
+                  url: material.url || '#'
+                }));
+              }
+            } catch (e) {
+              console.error("Error parsing course materials", e);
+            }
+          }
+          
+          return {
+            ...course,
+            materials: materials
+          } as Course;
+        }) || [];
+        
+        setTeacherCourses(processedCourses);
       } catch (error) {
         console.error("Error fetching teacher courses:", error);
       }

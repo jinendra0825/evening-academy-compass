@@ -247,6 +247,47 @@ export type Database = {
         }
         Relationships: []
       }
+      notifications: {
+        Row: {
+          course_id: string | null
+          date: string | null
+          id: string
+          message: string
+          read: boolean | null
+          recipientids: string[] | null
+          title: string
+          type: string
+        }
+        Insert: {
+          course_id?: string | null
+          date?: string | null
+          id?: string
+          message: string
+          read?: boolean | null
+          recipientids?: string[] | null
+          title: string
+          type?: string
+        }
+        Update: {
+          course_id?: string | null
+          date?: string | null
+          id?: string
+          message?: string
+          read?: boolean | null
+          recipientids?: string[] | null
+          title?: string
+          type?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "notifications_course_id_fkey"
+            columns: ["course_id"]
+            isOneToOne: false
+            referencedRelation: "courses"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       payments: {
         Row: {
           amount: number

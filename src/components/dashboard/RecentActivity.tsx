@@ -6,22 +6,11 @@ import { useAuth } from "@/contexts/AuthContext";
 import { Bell, PlusCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { ActivityCreationDialog } from "../schedule/ActivityCreationDialog";
-import { Course } from "@/types/models";
-
-interface Activity {
-  id: string;
-  title: string;
-  message: string;
-  date: string;
-  recipientIds: string[];
-  read: boolean;
-  type: "announcement" | "alert" | "message";
-  course_id?: string;
-}
+import { Course, Notification } from "@/types/models";
 
 export const RecentActivity = () => {
   const { user } = useAuth();
-  const [activities, setActivities] = useState<Activity[]>([]);
+  const [activities, setActivities] = useState<Notification[]>([]);
   const [loading, setLoading] = useState(true);
   const [openDialog, setOpenDialog] = useState(false);
   const [teacherCourses, setTeacherCourses] = useState<Course[]>([]);
@@ -62,10 +51,14 @@ export const RecentActivity = () => {
       
       // Sort by date (newest first)
       const sortedActivities = data
-        ? [...data].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()).slice(0, 5)
+        ? [...data].sort((a, b) => {
+            const dateA = new Date(a.date || '').getTime();
+            const dateB = new Date(b.date || '').getTime();
+            return dateB - dateA;
+          }).slice(0, 5)
         : [];
         
-      setActivities(sortedActivities);
+      setActivities(sortedActivities as Notification[]);
     } catch (error) {
       console.error("Error fetching activities:", error);
     } finally {
@@ -82,7 +75,36 @@ export const RecentActivity = () => {
           .eq("teacher_id", user.id);
           
         if (error) throw error;
-        setTeacherCourses(data || []);
+        
+        // Process materials to ensure compatibility with Course type
+        const processedCourses = data?.map(course => {
+          let materials: { name: string; url: string }[] = [];
+          
+          if (course.materials) {
+            try {
+              // Handle both string and object formats
+              const materialsData = typeof course.materials === 'string'
+                ? JSON.parse(course.materials)
+                : course.materials;
+                
+              if (Array.isArray(materialsData)) {
+                materials = materialsData.map(material => ({
+                  name: material.name || 'Unnamed material',
+                  url: material.url || '#'
+                }));
+              }
+            } catch (e) {
+              console.error("Error parsing course materials", e);
+            }
+          }
+          
+          return {
+            ...course,
+            materials: materials
+          } as Course;
+        }) || [];
+        
+        setTeacherCourses(processedCourses);
       } catch (error) {
         console.error("Error fetching teacher courses:", error);
       }

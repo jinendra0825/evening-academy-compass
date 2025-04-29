@@ -72,4 +72,5 @@ export interface Notification {
   recipientIds: string[];
   read: boolean;
   type: "announcement" | "alert" | "message";
+  course_id?: string;
 }
