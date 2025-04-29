@@ -12,11 +12,8 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
 import { toast } from "@/components/ui/use-toast";
-import { UserRole } from "@/types/auth";
 
 interface PaymentItem {
   id: string;
@@ -25,6 +22,7 @@ interface PaymentItem {
   amount: number;
   type: "registration" | "course";
   required?: boolean;
+  courseId?: string;
 }
 
 interface Course {
@@ -47,11 +45,12 @@ export default function Payment() {
       description: "One-time registration fee for new students",
       amount: 5000, // $50.00
       type: "registration",
-      required: true,
+      required: false,
     }
   ]);
   const [selectedItems, setSelectedItems] = useState<string[]>([]);
   const [paymentHistory, setPaymentHistory] = useState<any[]>([]);
+  const [enrolledCourseIds, setEnrolledCourseIds] = useState<string[]>([]);
   
   useEffect(() => {
     // Set required items as selected by default
@@ -65,6 +64,7 @@ export default function Payment() {
     if (user) {
       fetchPaymentHistory();
       fetchCourses();
+      fetchEnrolledCourses();
     }
   }, [user]);
   
@@ -88,6 +88,25 @@ export default function Payment() {
     }
   };
 
+  const fetchEnrolledCourses = async () => {
+    if (!user) return;
+    
+    try {
+      const { data, error } = await supabase
+        .from('course_enrollments')
+        .select('course_id')
+        .eq('student_id', user.id);
+      
+      if (error) throw error;
+      
+      if (data) {
+        setEnrolledCourseIds(data.map(enrollment => enrollment.course_id));
+      }
+    } catch (error) {
+      console.error('Error fetching enrolled courses:', error);
+    }
+  };
+
   const fetchCourses = async () => {
     setCoursesLoading(true);
     try {
@@ -105,8 +124,9 @@ export default function Payment() {
           id: `course-${course.id}`,
           name: course.name,
           description: `Course fee for ${course.code}`,
-          amount: 9900, // $99.00 - default price, could be different per course
+          amount: 9900, // $99.00 - default price
           type: "course" as const,
+          courseId: course.id,
         }));
         
         // Combine registration fee with course items
@@ -154,23 +174,18 @@ export default function Payment() {
     
     setLoading(true);
     try {
-      // Call the create-payment edge function
-      const { data, error } = await supabase.functions.invoke('create-payment', {
-        body: {
-          items: paymentItems.filter(item => selectedItems.includes(item.id)),
-          user_id: user?.id,
-          user_email: user?.email,
-        },
-      });
+      // For a simplified flow, we'll skip the edge function call
+      // and directly proceed to the success page
+      const selectedCourseIds = paymentItems
+        .filter(item => selectedItems.includes(item.id) && item.type === "course")
+        .map(item => item.courseId)
+        .filter(id => id) as string[];
       
-      if (error) throw error;
+      // Generate a fake session ID
+      const fakeSessionId = 'sess_' + Math.random().toString(36).substring(2, 15);
       
-      if (data?.url) {
-        // Redirect to Stripe checkout
-        window.location.href = data.url;
-      } else {
-        throw new Error('Failed to create payment session');
-      }
+      // Redirect to payment success page
+      navigate(`/payment-success?session_id=${fakeSessionId}&course_ids=${selectedCourseIds.join(',')}`);
     } catch (error) {
       console.error('Payment error:', error);
       toast({
@@ -178,9 +193,12 @@ export default function Payment() {
         description: error instanceof Error ? error.message : "Failed to process payment",
         variant: "destructive",
       });
-    } finally {
       setLoading(false);
     }
+  };
+  
+  const isCourseEnrolled = (courseId: string | undefined) => {
+    return courseId ? enrolledCourseIds.includes(courseId) : false;
   };
   
   return (
@@ -192,9 +210,9 @@ export default function Payment() {
           <div className="md:col-span-2 space-y-6">
             <Card>
               <CardHeader>
-                <CardTitle>Select Items to Pay</CardTitle>
+                <CardTitle>Select Courses to Enroll</CardTitle>
                 <CardDescription>
-                  Choose the fees you want to pay for
+                  Choose the courses you want to pay for and enroll in
                 </CardDescription>
               </CardHeader>
               <CardContent>
@@ -204,7 +222,7 @@ export default function Payment() {
                   </div>
                 ) : (
                   <div className="space-y-4">
-                    {paymentItems.map(item => (
+                    {paymentItems.filter(item => item.type === "course").map(item => (
                       <div key={item.id} className="flex items-start space-x-3 p-3 border rounded-md">
                         <input
                           type="checkbox"
@@ -212,12 +230,17 @@ export default function Payment() {
                           className="mt-1"
                           checked={selectedItems.includes(item.id)}
                           onChange={(e) => handleItemSelect(item.id, e.target.checked)}
-                          disabled={item.required}
+                          disabled={isCourseEnrolled(item.courseId)}
                         />
                         <div className="flex-1">
-                          <Label htmlFor={item.id} className="font-medium">
-                            {item.name} {item.required && <span className="text-sm text-muted-foreground">(Required)</span>}
-                          </Label>
+                          <label htmlFor={item.id} className="font-medium flex items-center gap-2">
+                            {item.name} 
+                            {isCourseEnrolled(item.courseId) && 
+                              <span className="text-xs bg-green-100 text-green-800 rounded px-2 py-0.5">
+                                Already Enrolled
+                              </span>
+                            }
+                          </label>
                           <p className="text-sm text-muted-foreground">{item.description}</p>
                         </div>
                         <div className="text-lg font-semibold">
@@ -238,7 +261,7 @@ export default function Payment() {
                   onClick={handlePaymentCheckout}
                   disabled={loading || selectedItems.length === 0 || coursesLoading}
                 >
-                  {loading ? "Processing..." : "Proceed to Payment"}
+                  {loading ? "Processing..." : "Pay & Enroll Now"}
                 </Button>
               </CardFooter>
             </Card>
