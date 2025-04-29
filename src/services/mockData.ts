@@ -290,7 +290,7 @@ export const notifications: Notification[] = [
     title: "End of Semester Approaching",
     message: "Final exams will be held next week. Please review the schedule.",
     date: "2023-03-10T09:00:00",
-    recipientIds: ["s1", "s2", "s3", "s4", "s5", "t1", "t2", "t3", "t4", "p1", "p2", "p3", "p4", "p5"],
+    recipientids: ["s1", "s2", "s3", "s4", "s5", "t1", "t2", "t3", "t4", "p1", "p2", "p3", "p4", "p5"],
     read: false,
     type: "announcement"
   },
@@ -299,7 +299,7 @@ export const notifications: Notification[] = [
     title: "Parent-Teacher Meeting",
     message: "Annual parent-teacher meetings scheduled for March 15th.",
     date: "2023-03-08T14:30:00",
-    recipientIds: ["p1", "p2", "p3", "p4", "p5", "t1", "t2", "t3", "t4"],
+    recipientids: ["p1", "p2", "p3", "p4", "p5", "t1", "t2", "t3", "t4"],
     read: false,
     type: "announcement"
   },
@@ -308,7 +308,7 @@ export const notifications: Notification[] = [
     title: "Assignment Due Date Extended",
     message: "The due date for the Chemistry assignment has been extended to next Friday.",
     date: "2023-03-07T11:15:00",
-    recipientIds: ["s2", "s4", "s5"],
+    recipientids: ["s2", "s4", "s5"],
     read: true,
     type: "alert"
   },
@@ -317,7 +317,7 @@ export const notifications: Notification[] = [
     title: "School Closure",
     message: "School will be closed on March 20th for staff development.",
     date: "2023-03-05T08:45:00",
-    recipientIds: ["s1", "s2", "s3", "s4", "s5", "t1", "t2", "t3", "t4", "p1", "p2", "p3", "p4", "p5"],
+    recipientids: ["s1", "s2", "s3", "s4", "s5", "t1", "t2", "t3", "t4", "p1", "p2", "p3", "p4", "p5"],
     read: true,
     type: "alert"
   },
@@ -326,7 +326,7 @@ export const notifications: Notification[] = [
     title: "Course Material Updated",
     message: "New study materials have been added to the Physics course.",
     date: "2023-03-04T16:20:00",
-    recipientIds: ["s1", "s2", "s3"],
+    recipientids: ["s1", "s2", "s3"],
     read: false,
     type: "message"
   }
@@ -383,7 +383,7 @@ export const getAttendanceForStudent = (studentId: string): { attendance: Attend
 
 // Helper function to get notifications for a user
 export const getNotificationsForUser = (userId: string): Notification[] => {
-  return notifications.filter(notification => notification.recipientIds.includes(userId));
+  return notifications.filter(notification => notification.recipientids.includes(userId));
 };
 
 // Helper function to get students for a parent
